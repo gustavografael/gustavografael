@@ -184,3 +184,7 @@ def _render_result(console: Console, result: RuleResult) -> None:
 
 def _fail(message: str) -> NoReturn:
     raise ValueError(message)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
