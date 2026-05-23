@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gmail-cleaner-helper"
+version = "0.1.0"
+description = "CLI seguro para revisar e limpar mensagens do Gmail com regras configuraveis."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "google-api-python-client",
+  "google-auth-httplib2",
+  "google-auth-oauthlib",
+  "PyYAML",
+  "rich",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+]
+
+[project.scripts]
+gmail-cleaner = "gmail_cleaner.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

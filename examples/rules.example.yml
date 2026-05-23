@@ -1,0 +1,29 @@
+rules:
+  - name: promocoes-antigas
+    query: "category:promotions older_than:180d"
+    action: trash
+    max_messages: 100
+
+  - name: newsletters-lidas
+    query: "label:newsletters is:read older_than:90d"
+    action: archive
+    max_messages: 100
+
+  - name: promocoes-nao-lidas
+    query: "category:promotions is:unread older_than:30d"
+    action: mark_read
+    max_messages: 100
+
+  - name: recibos-importantes
+    query: 'from:(no-reply@example.com) newer_than:365d'
+    action: label
+    label: "Financeiro/Recibos"
+    max_messages: 25
+
+  # Exclusao permanente e irreversivel. Prefira "trash" quando estiver em duvida.
+  # Para habilitar, mantenha allow_permanent_delete: true e execute apply com --allow-delete.
+  - name: spam-muito-antigo
+    query: "in:spam older_than:365d"
+    action: delete
+    allow_permanent_delete: true
+    max_messages: 10
