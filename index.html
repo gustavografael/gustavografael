@@ -368,6 +368,32 @@
       color: #fecdd3;
     }
 
+    .import-status.warning {
+      color: #fde68a;
+    }
+
+    .import-status strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .import-status ul {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
+
+    .import-status li {
+      color: inherit;
+    }
+
+    .import-status em {
+      color: var(--muted-strong);
+      font-style: normal;
+    }
+
     .sr-only {
       position: absolute;
       width: 1px;
@@ -1078,8 +1104,28 @@
 
     function setImportStatus(message, mode = "neutral") {
       elements.importStatus.textContent = message;
+      setImportStatusMode(mode);
+    }
+
+    function setImportStatusMode(mode) {
       elements.importStatus.classList.toggle("success", mode === "success");
       elements.importStatus.classList.toggle("error", mode === "error");
+      elements.importStatus.classList.toggle("warning", mode === "warning");
+    }
+
+    function setImportResultStatus(summary, diagnostics, mode = "neutral") {
+      const diagnosticList = diagnostics.length
+        ? `<ul>${diagnostics.slice(0, 5).map((item) => `
+          <li><strong>${escapeHtml(item.file)}</strong>${escapeHtml(item.reason)} <em>${escapeHtml(item.action)}</em></li>
+        `).join("")}</ul>`
+        : "";
+
+      const remaining = diagnostics.length > 5
+        ? `<p>Mais ${diagnostics.length - 5} arquivo(s) com detalhe oculto.</p>`
+        : "";
+
+      elements.importStatus.innerHTML = `<strong>${escapeHtml(summary)}</strong>${diagnosticList}${remaining}`;
+      setImportStatusMode(mode);
     }
 
     async function fetchDollarRate() {
@@ -1275,30 +1321,38 @@
 
       setImportStatus(`Lendo ${newEntries.length} PDF(s) de ${source}...`);
       const importedExpenses = [];
-      const errorDetails = [];
+      const diagnostics = [];
       let failedFiles = 0;
-      let emptyFiles = 0;
+      let emptyTextFiles = 0;
+      let unmatchedFiles = 0;
       let lockedFiles = 0;
 
       for (const entry of newEntries) {
         const key = createFileKey(entry.file, entry.path);
         try {
           const text = await extractPdfText(entry.file);
+          if (!text.trim()) {
+            emptyTextFiles += 1;
+            diagnostics.push(createPdfDiagnostic(entry.file.name, "empty-text"));
+            continue;
+          }
+
           const expenses = parseStatementExpenses(text, source);
           if (expenses.length) {
             importedExpenses.push(...expenses);
             state.importedFileKeys.add(key);
           } else {
-            emptyFiles += 1;
-            errorDetails.push(`${entry.file.name}: aberto, mas sem texto/lançamentos detectados`);
+            unmatchedFiles += 1;
+            diagnostics.push(createPdfDiagnostic(entry.file.name, "no-expenses"));
           }
         } catch (error) {
-          if (isPasswordError(error)) {
+          const diagnostic = classifyPdfError(entry.file.name, error);
+          if (diagnostic.type === "password") {
             lockedFiles += 1;
           } else {
             failedFiles += 1;
           }
-          errorDetails.push(`${entry.file.name}: ${formatPdfError(error)}`);
+          diagnostics.push(diagnostic);
           console.error(error);
         }
       }
@@ -1314,23 +1368,75 @@
       if (importedExpenses.length) {
         parts.push(`${importedExpenses.length} despesa(s) importada(s)`);
       }
-      if (emptyFiles) {
-        parts.push(`${emptyFiles} PDF(s) sem lançamentos detectados`);
+      if (emptyTextFiles) {
+        parts.push(`${emptyTextFiles} PDF(s) sem texto selecionável`);
+      }
+      if (unmatchedFiles) {
+        parts.push(`${unmatchedFiles} PDF(s) sem lançamentos reconhecidos`);
       }
       if (lockedFiles) {
-        parts.push(`${lockedFiles} PDF(s) protegido(s) não importado(s)`);
+        parts.push(`${lockedFiles} PDF(s) com senha ausente/incorreta`);
       }
       if (failedFiles) {
         parts.push(`${failedFiles} PDF(s) com erro de leitura`);
       }
 
       if (!parts.length) {
-        setImportStatus("Nenhum lançamento novo foi encontrado nos PDFs selecionados.", "error");
+        setImportResultStatus("Nenhum lançamento novo foi encontrado nos PDFs selecionados.", diagnostics, "error");
         return;
       }
 
-      const detail = errorDetails.length ? ` Detalhe: ${errorDetails.slice(0, 2).join(" | ")}` : "";
-      setImportStatus(`${parts.join("; ")}.${detail}`, failedFiles || lockedFiles ? "error" : "success");
+      const mode = failedFiles || lockedFiles || emptyTextFiles || unmatchedFiles
+        ? (importedExpenses.length ? "warning" : "error")
+        : "success";
+      setImportResultStatus(parts.join("; ") + ".", diagnostics, mode);
+    }
+
+    function createPdfDiagnostic(file, type, detail = "") {
+      const diagnostics = {
+        "password": {
+          reason: "Senha ausente ou incorreta.",
+          action: "Tente importar novamente e digite exatamente a senha do PDF."
+        },
+        "empty-text": {
+          reason: "O PDF abriu, mas não tem texto selecionável.",
+          action: "Provavelmente é uma imagem/scan; gere uma fatura em PDF com texto ou use OCR antes de importar."
+        },
+        "no-expenses": {
+          reason: "O PDF abriu e tem texto, mas não encontrei linhas com data e valor.",
+          action: "Pode ser um layout de fatura diferente; confira se há compras detalhadas no arquivo."
+        },
+        "invalid": {
+          reason: "Arquivo PDF inválido, corrompido ou incompatível.",
+          action: "Baixe a fatura novamente pelo banco/cartão e tente importar o novo arquivo."
+        },
+        "load": {
+          reason: "Não consegui carregar o arquivo PDF.",
+          action: "Verifique se o arquivo terminou de sincronizar no OneDrive e tente novamente."
+        },
+        "unknown": {
+          reason: detail || "Erro desconhecido ao abrir o PDF.",
+          action: "Tente baixar a fatura novamente; se persistir, o PDF pode usar uma proteção incompatível."
+        }
+      };
+
+      return { file, type, ...diagnostics[type] };
+    }
+
+    function classifyPdfError(file, error) {
+      if (isPasswordError(error)) {
+        return createPdfDiagnostic(file, "password");
+      }
+
+      if (/InvalidPDF|corrupt|invalid/i.test(error?.name || error?.message || "")) {
+        return createPdfDiagnostic(file, "invalid");
+      }
+
+      if (/MissingPDF|UnexpectedResponse|network|fetch|load/i.test(error?.name || error?.message || "")) {
+        return createPdfDiagnostic(file, "load");
+      }
+
+      return createPdfDiagnostic(file, "unknown", formatPdfError(error));
     }
 
     function isPdfFile(file) {
