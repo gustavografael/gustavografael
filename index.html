@@ -308,6 +308,21 @@
       margin-bottom: 20px;
     }
 
+    .dashboard-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .month-select {
+      width: auto;
+      min-width: 170px;
+      min-height: 46px;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+
     h2,
     h3 {
       margin: 0;
@@ -741,6 +756,15 @@
         grid-template-columns: 1fr;
       }
 
+      .dashboard-actions {
+        justify-content: stretch;
+      }
+
+      .month-select,
+      .dashboard-actions .button {
+        width: 100%;
+      }
+
       .amount {
         text-align: left;
       }
@@ -876,7 +900,10 @@
             <h2 id="dashboard-title">Gastos mensais</h2>
             <p class="helper" id="month-label">Resumo do mês atual</p>
           </div>
-          <button class="button danger" id="clear-expenses" type="button">Limpar</button>
+          <div class="dashboard-actions">
+            <select class="month-select" id="analysis-month" aria-label="Mês analisado"></select>
+            <button class="button danger" id="clear-expenses" type="button">Limpar</button>
+          </div>
         </div>
 
         <div class="summary-grid">
@@ -998,8 +1025,10 @@
     const state = {
       rate: Number(localStorage.getItem(RATE_KEY)) || 5,
       expenses: loadExpenses(),
-      importedFileKeys: new Set(loadImportedFileKeys())
+      importedFileKeys: new Set(loadImportedFileKeys()),
+      activeMonth: null
     };
+    state.activeMonth = getDefaultAnalysisMonth(state.expenses);
 
     const elements = {
       form: document.querySelector("#expense-form"),
@@ -1022,6 +1051,7 @@
       manualRate: document.querySelector("#manual-rate"),
       refreshRate: document.querySelector("#refresh-rate"),
       monthLabel: document.querySelector("#month-label"),
+      analysisMonth: document.querySelector("#analysis-month"),
       bankingBalance: document.querySelector("#banking-balance"),
       bankingMonth: document.querySelector("#banking-month"),
       totalBrl: document.querySelector("#total-brl"),
@@ -1071,6 +1101,10 @@
       elements.pdfFile.addEventListener("change", importPdfStatement);
       elements.pdfFolder.addEventListener("change", importPdfFolder);
       elements.connectFolder.addEventListener("click", connectOneDriveFolder);
+      elements.analysisMonth.addEventListener("change", () => {
+        state.activeMonth = elements.analysisMonth.value;
+        render();
+      });
       elements.refreshRate.addEventListener("click", handleRateRefresh);
       elements.manualRate.addEventListener("change", applyManualRate);
       elements.clear.addEventListener("click", clearCurrentMonth);
@@ -1359,6 +1393,7 @@
 
       if (importedExpenses.length) {
         state.expenses = [...importedExpenses, ...state.expenses];
+        state.activeMonth = getBestAnalysisMonth(importedExpenses);
         saveExpenses();
         saveImportedFileKeys();
         render();
@@ -1685,13 +1720,14 @@
     }
 
     function clearCurrentMonth() {
-      const currentMonth = monthKey(new Date());
-      const removedCount = state.expenses.filter((expense) => monthKey(expense.date) === currentMonth).length;
-      if (!removedCount || !confirm(`Remover ${removedCount} despesa(s) deste mês?`)) {
+      const activeMonth = state.activeMonth;
+      const removedCount = state.expenses.filter((expense) => monthKey(expense.date) === activeMonth).length;
+      if (!removedCount || !confirm(`Remover ${removedCount} despesa(s) de ${formatMonthKey(activeMonth)}?`)) {
         return;
       }
 
-      state.expenses = state.expenses.filter((expense) => monthKey(expense.date) !== currentMonth);
+      state.expenses = state.expenses.filter((expense) => monthKey(expense.date) !== activeMonth);
+      state.activeMonth = getDefaultAnalysisMonth(state.expenses);
       saveExpenses();
       render();
     }
@@ -1726,12 +1762,14 @@
       });
 
       state.expenses = [...demoExpenses, ...state.expenses];
+      state.activeMonth = getBestAnalysisMonth(demoExpenses);
       saveExpenses();
       render();
     }
 
     function render() {
-      const monthly = getCurrentMonthExpenses();
+      renderAnalysisMonthOptions();
+      const monthly = getActiveMonthExpenses();
       const totals = monthly.reduce((acc, expense) => {
         const brlValue = toBrl(expense);
         acc.brl += brlValue;
@@ -1739,9 +1777,9 @@
         return acc;
       }, { brl: 0, usd: 0 });
 
-      elements.monthLabel.textContent = `Resumo de ${monthFormatter.format(new Date())}`;
+      elements.monthLabel.textContent = `Resumo de ${formatMonthKey(state.activeMonth)}`;
       elements.bankingBalance.textContent = brlFormatter.format(totals.brl);
-      elements.bankingMonth.textContent = monthFormatter.format(new Date());
+      elements.bankingMonth.textContent = formatMonthKey(state.activeMonth);
       elements.totalBrl.textContent = brlFormatter.format(totals.brl);
       elements.totalUsd.textContent = usdFormatter.format(totals.usd);
       elements.expenseCount.textContent = String(monthly.length);
@@ -1788,7 +1826,7 @@
       if (!expenses.length) {
         elements.list.innerHTML = `
           <div class="empty">
-            Nenhuma despesa neste mês. Adicione seu primeiro lançamento ou carregue exemplos.
+            Nenhuma despesa em ${formatMonthKey(state.activeMonth)}. Escolha outro mês, importe uma fatura ou adicione lançamentos.
           </div>
         `;
         return;
@@ -1884,7 +1922,7 @@
       const padding = { top: 24, right: 18, bottom: 34, left: 42 };
       const plotWidth = width - padding.left - padding.right;
       const plotHeight = height - padding.top - padding.bottom;
-      const days = daysInCurrentMonth();
+      const days = daysInMonthKey(state.activeMonth);
       const totalsByDay = Array.from({ length: days }, () => 0);
 
       expenses.forEach((expense) => {
@@ -1991,11 +2029,43 @@
       return context;
     }
 
-    function getCurrentMonthExpenses() {
-      const currentMonth = monthKey(new Date());
+    function getActiveMonthExpenses() {
       return state.expenses
-        .filter((expense) => monthKey(expense.date) === currentMonth)
+        .filter((expense) => monthKey(expense.date) === state.activeMonth)
         .sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    function renderAnalysisMonthOptions() {
+      const months = getAvailableMonths();
+      elements.analysisMonth.innerHTML = months.map((key) => `
+        <option value="${key}" ${key === state.activeMonth ? "selected" : ""}>${formatMonthKey(key)}</option>
+      `).join("");
+    }
+
+    function getAvailableMonths() {
+      const months = new Set([monthKey(new Date()), state.activeMonth]);
+      state.expenses.forEach((expense) => months.add(monthKey(expense.date)));
+      return [...months].filter(Boolean).sort().reverse();
+    }
+
+    function getDefaultAnalysisMonth(expenses) {
+      const currentMonth = monthKey(new Date());
+      if (expenses.some((expense) => monthKey(expense.date) === currentMonth)) {
+        return currentMonth;
+      }
+
+      return getBestAnalysisMonth(expenses) || currentMonth;
+    }
+
+    function getBestAnalysisMonth(expenses) {
+      const totalsByMonth = expenses.reduce((acc, expense) => {
+        const key = monthKey(expense.date);
+        acc[key] = (acc[key] || 0) + toBrl(expense);
+        return acc;
+      }, {});
+
+      return Object.entries(totalsByMonth)
+        .sort((a, b) => b[0].localeCompare(a[0]) || b[1] - a[1])[0]?.[0] || null;
     }
 
     function getLastMonths(count) {
@@ -2039,9 +2109,14 @@
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     }
 
-    function daysInCurrentMonth() {
-      const now = new Date();
-      return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    function daysInMonthKey(key) {
+      const [year, month] = key.split("-").map(Number);
+      return new Date(year, month, 0).getDate();
+    }
+
+    function formatMonthKey(key) {
+      const [year, month] = key.split("-").map(Number);
+      return monthFormatter.format(new Date(year, month - 1, 1));
     }
 
     function toDateInputValue(date) {
