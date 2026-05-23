@@ -1152,8 +1152,7 @@
         pages.push(groupPdfTextItems(content.items));
       }
 
-      return pages.join("
-");
+      return pages.join("\n");
     }
 
     function groupPdfTextItems(items) {
@@ -1178,14 +1177,12 @@
           .replace(/\s+/g, " ")
           .trim())
         .filter(Boolean)
-        .join("
-");
+        .join("\n");
     }
 
     function parseStatementExpenses(text) {
       return text
-        .split(/
-+/)
+        .split(/\n+/)
         .map((line) => line.replace(/\s+/g, " ").trim())
         .filter(Boolean)
         .map(parseStatementLine)
@@ -1197,7 +1194,7 @@
         return null;
       }
 
-      const dateMatch = line.match(/(\d{1,2})[\/. -](\d{1,2})(?:[\/. -](\d{2,4}))?/);
+      const dateMatch = line.match(/\b(\d{1,2})[\/. -](\d{1,2})(?:[\/. -](\d{2,4}))?\b/);
       if (!dateMatch) {
         return null;
       }
