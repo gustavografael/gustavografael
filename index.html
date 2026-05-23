@@ -798,13 +798,16 @@
         <section class="import-panel" aria-labelledby="import-title">
           <div>
             <h3 id="import-title">Importar fatura do cartão</h3>
-            <p>Envie um PDF da fatura para detectar lançamentos, separar por categoria e atualizar seus gráficos automaticamente.</p>
+            <p>Envie um PDF ou selecione a pasta sincronizada do OneDrive para detectar lançamentos, separar por categoria e atualizar seus gráficos automaticamente. O app nunca pede senha.</p>
           </div>
           <div class="import-actions">
             <label class="button secondary" for="pdf-file">Importar PDF</label>
             <input class="sr-only" id="pdf-file" type="file" accept="application/pdf">
+            <label class="button secondary" for="pdf-folder">Importar pasta OneDrive</label>
+            <input class="sr-only" id="pdf-folder" type="file" accept="application/pdf" multiple webkitdirectory directory>
+            <button class="button secondary" id="connect-folder" type="button">Conectar pasta</button>
           </div>
-          <div class="import-status" id="import-status">Nenhum PDF importado ainda.</div>
+          <div class="import-status" id="import-status">Nenhum PDF importado ainda. Selecione sua pasta local do OneDrive ou conecte a pasta no navegador.</div>
         </section>
       </aside>
 
@@ -892,7 +895,11 @@
     ];
     const STORAGE_KEY = "finance-dashboard-expenses-v1";
     const RATE_KEY = "finance-dashboard-rate-v1";
+    const IMPORTED_FILES_KEY = "finance-dashboard-imported-files-v1";
     const REFRESH_INTERVAL = 60_000;
+    const DIRECTORY_SCAN_INTERVAL = 30_000;
+    let connectedDirectoryHandle = null;
+    let directoryScanTimer = null;
 
     const categoryColors = {
       "Moradia": "#38bdf8",
@@ -916,7 +923,8 @@
 
     const state = {
       rate: Number(localStorage.getItem(RATE_KEY)) || 5,
-      expenses: loadExpenses()
+      expenses: loadExpenses(),
+      importedFileKeys: new Set(loadImportedFileKeys())
     };
 
     const elements = {
@@ -927,6 +935,8 @@
       category: document.querySelector("#category"),
       date: document.querySelector("#date"),
       pdfFile: document.querySelector("#pdf-file"),
+      pdfFolder: document.querySelector("#pdf-folder"),
+      connectFolder: document.querySelector("#connect-folder"),
       importStatus: document.querySelector("#import-status"),
       quoteValue: document.querySelector("#quote-value"),
       quoteMeta: document.querySelector("#quote-meta"),
@@ -982,6 +992,8 @@
 
       elements.form.addEventListener("submit", addExpense);
       elements.pdfFile.addEventListener("change", importPdfStatement);
+      elements.pdfFolder.addEventListener("change", importPdfFolder);
+      elements.connectFolder.addEventListener("click", connectOneDriveFolder);
       elements.refreshRate.addEventListener("click", handleRateRefresh);
       elements.manualRate.addEventListener("change", applyManualRate);
       elements.clear.addEventListener("click", clearCurrentMonth);
@@ -997,8 +1009,20 @@
       }
     }
 
+    function loadImportedFileKeys() {
+      try {
+        return JSON.parse(localStorage.getItem(IMPORTED_FILES_KEY)) || [];
+      } catch (error) {
+        return [];
+      }
+    }
+
     function saveExpenses() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.expenses));
+    }
+
+    function saveImportedFileKeys() {
+      localStorage.setItem(IMPORTED_FILES_KEY, JSON.stringify([...state.importedFileKeys]));
     }
 
     function setImportStatus(message, mode = "neutral") {
@@ -1114,26 +1138,144 @@
         return;
       }
 
-      setImportStatus(`Lendo ${file.name}...`);
+      await importPdfEntries([{ file, path: file.name }], "PDF");
+      elements.pdfFile.value = "";
+    }
+
+    async function importPdfFolder(event) {
+      const files = Array.from(event.target.files || [])
+        .filter(isPdfFile)
+        .map((file) => ({ file, path: file.webkitRelativePath || file.name }));
+
+      if (!files.length) {
+        setImportStatus("Não encontrei PDFs nessa pasta. Selecione a pasta sincronizada do OneDrive que contém suas faturas.", "error");
+        elements.pdfFolder.value = "";
+        return;
+      }
+
+      await importPdfEntries(files, "pasta OneDrive");
+      elements.pdfFolder.value = "";
+    }
+
+    async function connectOneDriveFolder() {
+      if (!window.showDirectoryPicker) {
+        setImportStatus("Seu navegador não permite monitorar uma pasta diretamente. Use o botão 'Importar pasta OneDrive' para importar em lote.", "error");
+        return;
+      }
+
       try {
-        const text = await extractPdfText(file);
-        const importedExpenses = parseStatementExpenses(text);
+        connectedDirectoryHandle = await window.showDirectoryPicker({ mode: "read" });
+        setImportStatus("Pasta conectada. Vou procurar PDFs novos a cada 30 segundos enquanto esta aba estiver aberta.", "success");
+        await scanConnectedDirectory();
 
-        if (!importedExpenses.length) {
-          setImportStatus("Não encontrei lançamentos com data e valor nessa fatura. Tente um PDF com texto selecionável.", "error");
-          return;
+        if (directoryScanTimer) {
+          clearInterval(directoryScanTimer);
         }
+        directoryScanTimer = setInterval(scanConnectedDirectory, DIRECTORY_SCAN_INTERVAL);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error(error);
+          setImportStatus("Não foi possível conectar a pasta. Verifique a permissão de leitura no navegador.", "error");
+        }
+      }
+    }
 
-        state.expenses = [...importedExpenses, ...state.expenses];
-        saveExpenses();
-        render();
-        setImportStatus(`${importedExpenses.length} despesa(s) importada(s) e categorizada(s) automaticamente.`, "success");
+    async function scanConnectedDirectory() {
+      if (!connectedDirectoryHandle) {
+        return;
+      }
+
+      try {
+        const files = await collectPdfFilesFromDirectory(connectedDirectoryHandle);
+        await importPdfEntries(files, "pasta OneDrive", { silentWhenNoNewFiles: true });
       } catch (error) {
         console.error(error);
-        setImportStatus("Não foi possível importar o PDF. Verifique se a fatura contém texto selecionável.", "error");
-      } finally {
-        elements.pdfFile.value = "";
+        setImportStatus("Perdi acesso à pasta conectada. Clique em 'Conectar pasta' novamente.", "error");
+        clearInterval(directoryScanTimer);
+        directoryScanTimer = null;
       }
+    }
+
+    async function collectPdfFilesFromDirectory(directoryHandle, prefix = "") {
+      const files = [];
+      for await (const [name, handle] of directoryHandle.entries()) {
+        const path = prefix ? `${prefix}/${name}` : name;
+        if (handle.kind === "file") {
+          const file = await handle.getFile();
+          if (isPdfFile(file)) {
+            files.push({ file, path });
+          }
+        } else if (handle.kind === "directory") {
+          files.push(...await collectPdfFilesFromDirectory(handle, path));
+        }
+      }
+
+      return files;
+    }
+
+    async function importPdfEntries(entries, source, options = {}) {
+      const newEntries = entries.filter(({ file, path }) => !state.importedFileKeys.has(createFileKey(file, path)));
+      if (!newEntries.length) {
+        if (!options.silentWhenNoNewFiles) {
+          setImportStatus("Nenhum PDF novo para importar. Os arquivos selecionados já foram processados.", "success");
+        }
+        return;
+      }
+
+      setImportStatus(`Lendo ${newEntries.length} PDF(s) de ${source}...`);
+      const importedExpenses = [];
+      let failedFiles = 0;
+      let emptyFiles = 0;
+
+      for (const entry of newEntries) {
+        const key = createFileKey(entry.file, entry.path);
+        try {
+          const text = await extractPdfText(entry.file);
+          const expenses = parseStatementExpenses(text, source);
+          if (expenses.length) {
+            importedExpenses.push(...expenses);
+            state.importedFileKeys.add(key);
+          } else {
+            emptyFiles += 1;
+          }
+        } catch (error) {
+          failedFiles += 1;
+          console.error(error);
+        }
+      }
+
+      if (importedExpenses.length) {
+        state.expenses = [...importedExpenses, ...state.expenses];
+        saveExpenses();
+        saveImportedFileKeys();
+        render();
+      }
+
+      const parts = [];
+      if (importedExpenses.length) {
+        parts.push(`${importedExpenses.length} despesa(s) importada(s)`);
+      }
+      if (emptyFiles) {
+        parts.push(`${emptyFiles} PDF(s) sem lançamentos detectados`);
+      }
+      if (failedFiles) {
+        parts.push(`${failedFiles} PDF(s) com erro de leitura`);
+      }
+
+      if (!parts.length) {
+        setImportStatus("Nenhum lançamento novo foi encontrado nos PDFs selecionados.", "error");
+        return;
+      }
+
+      setImportStatus(`${parts.join("; ")}.`, failedFiles ? "error" : "success");
+    }
+
+    function isPdfFile(file) {
+      return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    }
+
+    function createFileKey(file, path) {
+      return `${path || file.name}:${file.size}:${file.lastModified}`;
     }
 
     async function extractPdfText(file) {
@@ -1180,7 +1322,7 @@
         .join("\n");
     }
 
-    function parseStatementExpenses(text) {
+    function parseStatementExpenses(text, source = "PDF") {
       return text
         .split(/\n+/)
         .map((line) => line.replace(/\s+/g, " ").trim())
@@ -1223,7 +1365,7 @@
         category: inferCategory(description),
         date: parseStatementDate(dateMatch),
         createdAt: new Date().toISOString(),
-        importedFrom: "PDF"
+        importedFrom: source
       };
     }
 
