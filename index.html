@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Controle Financeiro Pessoal</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b12;
+      --bg-soft: #0d1321;
+      --card: rgba(17, 24, 39, 0.82);
+      --card-border: rgba(148, 163, 184, 0.18);
+      --text: #e5edf8;
+      --muted: #94a3b8;
+      --muted-strong: #cbd5e1;
+      --primary: #38bdf8;
+      --primary-strong: #0ea5e9;
+      --success: #34d399;
+      --warning: #f59e0b;
+      --danger: #fb7185;
+      --purple: #a78bfa;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 34rem),
+        radial-gradient(circle at 85% 8%, rgba(167, 139, 250, 0.18), transparent 28rem),
+        linear-gradient(135deg, #05070c 0%, var(--bg) 48%, #111827 100%);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.4fr 0.8fr;
+      gap: 24px;
+      align-items: stretch;
+      margin-bottom: 24px;
+    }
+
+    .hero-card,
+    .card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.64));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero-card {
+      min-height: 280px;
+      padding: 34px;
+    }
+
+    .hero-card::after {
+      position: absolute;
+      right: -90px;
+      bottom: -90px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.16);
+      content: "";
+      filter: blur(8px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 999px;
+      background: rgba(14, 165, 233, 0.12);
+      color: #bae6fd;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 740px;
+      margin: 26px 0 16px;
+      font-size: clamp(2.2rem, 5vw, 4.6rem);
+      line-height: 0.94;
+      letter-spacing: -0.07em;
+    }
+
+    .hero p {
+      max-width: 630px;
+      margin: 0;
+      color: var(--muted-strong);
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .button {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+      color: #03101b;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 32px rgba(14, 165, 233, 0.24);
+    }
+
+    .button.secondary {
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: rgba(15, 23, 42, 0.86);
+      color: var(--text);
+    }
+
+    .button.danger {
+      background: rgba(251, 113, 133, 0.16);
+      color: #fecdd3;
+    }
+
+    .quote-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 26px;
+    }
+
+    .quote-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .status {
+      display: inline-flex;
+      gap: 7px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--warning);
+      box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.12);
+    }
+
+    .status-dot.online {
+      background: var(--success);
+      box-shadow: 0 0 0 6px rgba(52, 211, 153, 0.12);
+    }
+
+    .quote-value {
+      margin: 28px 0 8px;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      font-weight: 900;
+      letter-spacing: -0.05em;
+    }
+
+    .quote-meta,
+    .helper {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .manual-rate {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 0.95fr 1.35fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .card {
+      padding: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    h2,
+    h3 {
+      margin: 0;
+      letter-spacing: -0.03em;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+    }
+
+    h3 {
+      font-size: 1rem;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 0.74fr;
+      gap: 12px;
+    }
+
+    label {
+      color: var(--muted-strong);
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: var(--radius-md);
+      outline: none;
+      background: rgba(2, 6, 23, 0.44);
+      color: var(--text);
+      padding: 0 14px;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: rgba(56, 189, 248, 0.8);
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.14);
+      background: rgba(2, 6, 23, 0.72);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .metric {
+      min-height: 118px;
+      padding: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: var(--radius-lg);
+      background: rgba(2, 6, 23, 0.32);
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 14px;
+      font-size: clamp(1.45rem, 2.4vw, 2rem);
+      letter-spacing: -0.05em;
+    }
+
+    .metric small {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 0.85fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .chart-panel {
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: var(--radius-lg);
+      background: rgba(2, 6, 23, 0.26);
+      padding: 16px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 240px;
+    }
+
+    .donut-wrap {
+      display: grid;
+      place-items: center;
+      min-height: 240px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted-strong);
+      font-size: 0.86rem;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+    }
+
+    .expense-list {
+      display: grid;
+      gap: 10px;
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .expense {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 14px;
+      align-items: center;
+      padding: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.58);
+    }
+
+    .expense-title {
+      overflow: hidden;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .expense-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: #bae6fd;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .amount {
+      text-align: right;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .converted {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .icon-button {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 0;
+      border-radius: 12px;
+      background: rgba(251, 113, 133, 0.12);
+      color: #fecdd3;
+      font-size: 1.1rem;
+    }
+
+    .empty {
+      padding: 32px 18px;
+      border: 1px dashed rgba(148, 163, 184, 0.24);
+      border-radius: var(--radius-lg);
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .grid,
+      .charts {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        width: min(100% - 22px, 1180px);
+        padding-top: 18px;
+      }
+
+      .hero-card,
+      .card,
+      .quote-card {
+        padding: 20px;
+        border-radius: 22px;
+      }
+
+      .field-row,
+      .manual-rate,
+      .expense {
+        grid-template-columns: 1fr;
+      }
+
+      .amount {
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-card">
+        <span class="eyebrow">Finanças pessoais</span>
+        <h1 id="page-title">Controle seus gastos em BRL e USD.</h1>
+        <p>
+          Registre despesas, acompanhe o gasto mensal convertido automaticamente e veja gráficos simples
+          para entender para onde seu dinheiro está indo.
+        </p>
+        <div class="hero-actions">
+          <a class="button" href="#expense-form">Adicionar despesa</a>
+          <button class="button secondary" id="seed-demo" type="button">Carregar exemplo</button>
+        </div>
+      </div>
+
+      <aside class="quote-card card" aria-labelledby="quote-title">
+        <div>
+          <div class="quote-top">
+            <h2 id="quote-title">Dólar hoje</h2>
+            <span class="status" id="quote-status">
+              <span class="status-dot" id="quote-dot"></span>
+              <span id="quote-status-text">Buscando...</span>
+            </span>
+          </div>
+          <div class="quote-value" id="quote-value">R$ --</div>
+          <div class="quote-meta" id="quote-meta">Cotação USD-BRL em tempo real via AwesomeAPI.</div>
+        </div>
+        <div class="manual-rate" aria-label="Cotação manual">
+          <input id="manual-rate" inputmode="decimal" placeholder="Ajuste manual: 5,10" aria-label="Cotação manual do dólar">
+          <button class="button secondary" id="refresh-rate" type="button">Atualizar</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="grid">
+      <aside class="card" aria-labelledby="form-title">
+        <div class="card-header">
+          <div>
+            <h2 id="form-title">Nova despesa</h2>
+            <p class="helper">Valores em USD são convertidos para BRL sempre que a cotação muda.</p>
+          </div>
+        </div>
+
+        <form class="form-grid" id="expense-form">
+          <div class="field">
+            <label for="description">Descrição</label>
+            <input id="description" name="description" maxlength="60" placeholder="Ex.: Mercado, Netflix, almoço" required>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="amount">Valor</label>
+              <input id="amount" name="amount" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" required>
+            </div>
+            <div class="field">
+              <label for="currency">Moeda</label>
+              <select id="currency" name="currency">
+                <option value="BRL">BRL</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="category">Categoria</label>
+              <select id="category" name="category">
+                <option>Moradia</option>
+                <option>Alimentação</option>
+                <option>Transporte</option>
+                <option>Assinaturas</option>
+                <option>Lazer</option>
+                <option>Saúde</option>
+                <option>Outros</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="date">Data</label>
+              <input id="date" name="date" type="date" required>
+            </div>
+          </div>
+
+          <button class="button" type="submit">Salvar despesa</button>
+        </form>
+      </aside>
+
+      <section class="card" aria-labelledby="dashboard-title">
+        <div class="card-header">
+          <div>
+            <h2 id="dashboard-title">Gastos mensais</h2>
+            <p class="helper" id="month-label">Resumo do mês atual</p>
+          </div>
+          <button class="button danger" id="clear-expenses" type="button">Limpar</button>
+        </div>
+
+        <div class="summary-grid">
+          <article class="metric">
+            <span>Total convertido</span>
+            <strong id="total-brl">R$ 0,00</strong>
+            <small>Todos os gastos do mês em reais</small>
+          </article>
+          <article class="metric">
+            <span>Em dólar</span>
+            <strong id="total-usd">US$ 0.00</strong>
+            <small>Despesas lançadas originalmente em USD</small>
+          </article>
+          <article class="metric">
+            <span>Registros</span>
+            <strong id="expense-count">0</strong>
+            <small>Despesas cadastradas no mês</small>
+          </article>
+        </div>
+
+        <div class="charts">
+          <article class="chart-panel">
+            <h3>Evolução diária</h3>
+            <canvas id="bar-chart" width="720" height="300" aria-label="Gráfico de gastos por dia"></canvas>
+          </article>
+          <article class="chart-panel">
+            <h3>Por categoria</h3>
+            <div class="donut-wrap">
+              <canvas id="donut-chart" width="360" height="300" aria-label="Gráfico de gastos por categoria"></canvas>
+            </div>
+            <div class="legend" id="legend"></div>
+          </article>
+        </div>
+
+        <div class="expense-list" id="expense-list" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <p class="footer-note">
+      A cotação é atualizada automaticamente a cada 60 segundos. Caso a API esteja indisponível, informe uma taxa manual.
+    </p>
+  </main>
+
+  <script>
+    const API_URL = "https://economia.awesomeapi.com.br/json/last/USD-BRL";
+    const STORAGE_KEY = "finance-dashboard-expenses-v1";
+    const RATE_KEY = "finance-dashboard-rate-v1";
+    const REFRESH_INTERVAL = 60_000;
+
+    const categoryColors = {
+      "Moradia": "#38bdf8",
+      "Alimentação": "#34d399",
+      "Transporte": "#f59e0b",
+      "Assinaturas": "#a78bfa",
+      "Lazer": "#fb7185",
+      "Saúde": "#22d3ee",
+      "Outros": "#94a3b8"
+    };
+
+    const state = {
+      rate: Number(localStorage.getItem(RATE_KEY)) || 5,
+      expenses: loadExpenses()
+    };
+
+    const elements = {
+      form: document.querySelector("#expense-form"),
+      description: document.querySelector("#description"),
+      amount: document.querySelector("#amount"),
+      currency: document.querySelector("#currency"),
+      category: document.querySelector("#category"),
+      date: document.querySelector("#date"),
+      quoteValue: document.querySelector("#quote-value"),
+      quoteMeta: document.querySelector("#quote-meta"),
+      quoteDot: document.querySelector("#quote-dot"),
+      quoteStatusText: document.querySelector("#quote-status-text"),
+      manualRate: document.querySelector("#manual-rate"),
+      refreshRate: document.querySelector("#refresh-rate"),
+      monthLabel: document.querySelector("#month-label"),
+      totalBrl: document.querySelector("#total-brl"),
+      totalUsd: document.querySelector("#total-usd"),
+      expenseCount: document.querySelector("#expense-count"),
+      list: document.querySelector("#expense-list"),
+      clear: document.querySelector("#clear-expenses"),
+      seedDemo: document.querySelector("#seed-demo"),
+      barChart: document.querySelector("#bar-chart"),
+      donutChart: document.querySelector("#donut-chart"),
+      legend: document.querySelector("#legend")
+    };
+
+    const brlFormatter = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+
+    const usdFormatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD"
+    });
+
+    const monthFormatter = new Intl.DateTimeFormat("pt-BR", {
+      month: "long",
+      year: "numeric"
+    });
+
+    init();
+
+    function init() {
+      elements.date.valueAsDate = new Date();
+      updateQuoteUi("offline", "Usando taxa salva");
+      render();
+      fetchDollarRate();
+      setInterval(fetchDollarRate, REFRESH_INTERVAL);
+
+      elements.form.addEventListener("submit", addExpense);
+      elements.refreshRate.addEventListener("click", handleRateRefresh);
+      elements.manualRate.addEventListener("change", applyManualRate);
+      elements.clear.addEventListener("click", clearCurrentMonth);
+      elements.seedDemo.addEventListener("click", seedDemoData);
+      elements.list.addEventListener("click", removeExpense);
+    }
+
+    function loadExpenses() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveExpenses() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.expenses));
+    }
+
+    async function fetchDollarRate() {
+      updateQuoteUi("loading", "Buscando...");
+
+      try {
+        const response = await fetch(API_URL, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("Falha ao consultar cotação");
+        }
+
+        const data = await response.json();
+        const quote = Number(data.USDBRL?.bid);
+        if (!Number.isFinite(quote) || quote <= 0) {
+          throw new Error("Cotação inválida");
+        }
+
+        state.rate = quote;
+        localStorage.setItem(RATE_KEY, String(quote));
+        updateQuoteUi("online", "Ao vivo");
+        elements.quoteMeta.textContent = `Atualizado em ${formatTime(new Date())}. Fonte: AwesomeAPI.`;
+        render();
+      } catch (error) {
+        updateQuoteUi("offline", "Modo manual");
+        elements.quoteMeta.textContent = "Não foi possível buscar a cotação agora. A taxa salva/manual continua ativa.";
+        render();
+      }
+    }
+
+    function updateQuoteUi(mode, label) {
+      elements.quoteValue.textContent = brlFormatter.format(state.rate);
+      elements.quoteStatusText.textContent = label;
+      elements.quoteDot.classList.toggle("online", mode === "online");
+    }
+
+    function handleRateRefresh() {
+      if (elements.manualRate.value.trim()) {
+        applyManualRate();
+        return;
+      }
+
+      fetchDollarRate();
+    }
+
+    function applyManualRate() {
+      const rate = parseMoney(elements.manualRate.value);
+      if (!Number.isFinite(rate) || rate <= 0) {
+        elements.manualRate.value = "";
+        return;
+      }
+
+      state.rate = rate;
+      localStorage.setItem(RATE_KEY, String(rate));
+      updateQuoteUi("offline", "Taxa manual");
+      elements.quoteMeta.textContent = `Cotação manual aplicada em ${formatTime(new Date())}.`;
+      elements.manualRate.value = "";
+      render();
+    }
+
+    function addExpense(event) {
+      event.preventDefault();
+
+      const amount = parseMoney(elements.amount.value);
+      const description = elements.description.value.trim();
+      if (!description) {
+        elements.description.focus();
+        return;
+      }
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        elements.amount.focus();
+        return;
+      }
+
+      state.expenses.unshift({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        description,
+        amount,
+        currency: elements.currency.value,
+        category: elements.category.value,
+        date: elements.date.value || toDateInputValue(new Date()),
+        createdAt: new Date().toISOString()
+      });
+
+      saveExpenses();
+      elements.form.reset();
+      elements.date.valueAsDate = new Date();
+      render();
+    }
+
+    function removeExpense(event) {
+      const button = event.target.closest("[data-remove]");
+      if (!button) {
+        return;
+      }
+
+      state.expenses = state.expenses.filter((expense) => expense.id !== button.dataset.remove);
+      saveExpenses();
+      render();
+    }
+
+    function clearCurrentMonth() {
+      const currentMonth = monthKey(new Date());
+      const removedCount = state.expenses.filter((expense) => monthKey(expense.date) === currentMonth).length;
+      if (!removedCount || !confirm(`Remover ${removedCount} despesa(s) deste mês?`)) {
+        return;
+      }
+
+      state.expenses = state.expenses.filter((expense) => monthKey(expense.date) !== currentMonth);
+      saveExpenses();
+      render();
+    }
+
+    function seedDemoData() {
+      const today = new Date();
+      const samples = [
+        ["Aluguel", 2200, "BRL", "Moradia", 2],
+        ["Supermercado", 460.35, "BRL", "Alimentação", 5],
+        ["Spotify", 10.99, "USD", "Assinaturas", 8],
+        ["Uber", 72.8, "BRL", "Transporte", 13],
+        ["Curso online", 49, "USD", "Lazer", 18],
+        ["Farmácia", 132.9, "BRL", "Saúde", 21]
+      ];
+
+      const demoExpenses = samples.map(([description, amount, currency, category, dayOffset]) => {
+        const date = new Date(today);
+        date.setDate(Math.max(1, today.getDate() - dayOffset));
+        return {
+          id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${description}`,
+          description,
+          amount,
+          currency,
+          category,
+          date: toDateInputValue(date),
+          createdAt: new Date().toISOString()
+        };
+      });
+
+      state.expenses = [...demoExpenses, ...state.expenses];
+      saveExpenses();
+      render();
+    }
+
+    function render() {
+      const monthly = getCurrentMonthExpenses();
+      const totals = monthly.reduce((acc, expense) => {
+        const brlValue = toBrl(expense);
+        acc.brl += brlValue;
+        acc.usd += expense.currency === "USD" ? expense.amount : 0;
+        return acc;
+      }, { brl: 0, usd: 0 });
+
+      elements.monthLabel.textContent = `Resumo de ${monthFormatter.format(new Date())}`;
+      elements.totalBrl.textContent = brlFormatter.format(totals.brl);
+      elements.totalUsd.textContent = usdFormatter.format(totals.usd);
+      elements.expenseCount.textContent = String(monthly.length);
+      elements.quoteValue.textContent = brlFormatter.format(state.rate);
+
+      renderExpenses(monthly);
+      drawBarChart(monthly);
+      drawDonutChart(monthly);
+    }
+
+    function renderExpenses(expenses) {
+      if (!expenses.length) {
+        elements.list.innerHTML = `
+          <div class="empty">
+            Nenhuma despesa neste mês. Adicione seu primeiro lançamento ou carregue exemplos.
+          </div>
+        `;
+        return;
+      }
+
+      elements.list.innerHTML = expenses.map((expense) => {
+        const original = expense.currency === "USD"
+          ? usdFormatter.format(expense.amount)
+          : brlFormatter.format(expense.amount);
+        const converted = expense.currency === "USD"
+          ? `<span class="converted">${brlFormatter.format(toBrl(expense))}</span>`
+          : `<span class="converted">${usdFormatter.format(expense.amount / state.rate)}</span>`;
+
+        return `
+          <article class="expense">
+            <div>
+              <div class="expense-title">${escapeHtml(expense.description)}</div>
+              <div class="expense-details">
+                <span class="pill">${escapeHtml(expense.category)}</span>
+                <span>${formatDate(expense.date)}</span>
+                <span>${expense.currency}</span>
+              </div>
+            </div>
+            <div class="amount">
+              ${original}
+              ${converted}
+            </div>
+            <button class="icon-button" type="button" data-remove="${expense.id}" aria-label="Remover ${escapeHtml(expense.description)}">×</button>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function drawBarChart(expenses) {
+      const canvas = elements.barChart;
+      const context = setupCanvas(canvas);
+      const { width, height } = canvas.getBoundingClientRect();
+      context.clearRect(0, 0, width, height);
+
+      const padding = { top: 24, right: 18, bottom: 34, left: 42 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const days = daysInCurrentMonth();
+      const totalsByDay = Array.from({ length: days }, () => 0);
+
+      expenses.forEach((expense) => {
+        const day = new Date(`${expense.date}T00:00:00`).getDate();
+        totalsByDay[day - 1] += toBrl(expense);
+      });
+
+      const max = Math.max(...totalsByDay, 1);
+      context.strokeStyle = "rgba(148, 163, 184, 0.18)";
+      context.lineWidth = 1;
+      context.beginPath();
+      context.moveTo(padding.left, padding.top);
+      context.lineTo(padding.left, padding.top + plotHeight);
+      context.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+      context.stroke();
+
+      const gap = 3;
+      const barWidth = Math.max(3, plotWidth / days - gap);
+      totalsByDay.forEach((value, index) => {
+        const barHeight = (value / max) * plotHeight;
+        const x = padding.left + index * (plotWidth / days);
+        const y = padding.top + plotHeight - barHeight;
+        const gradient = context.createLinearGradient(0, y, 0, padding.top + plotHeight);
+        gradient.addColorStop(0, "#38bdf8");
+        gradient.addColorStop(1, "rgba(56, 189, 248, 0.18)");
+        context.fillStyle = gradient;
+        roundRect(context, x, y, barWidth, barHeight || 2, 5);
+        context.fill();
+      });
+
+      context.fillStyle = "#94a3b8";
+      context.font = "12px Inter, system-ui, sans-serif";
+      context.fillText("1", padding.left, height - 12);
+      context.fillText(String(days), width - padding.right - 18, height - 12);
+      context.fillText(brlFormatter.format(max), 8, padding.top + 4);
+    }
+
+    function drawDonutChart(expenses) {
+      const canvas = elements.donutChart;
+      const context = setupCanvas(canvas);
+      const { width, height } = canvas.getBoundingClientRect();
+      context.clearRect(0, 0, width, height);
+
+      const totalsByCategory = expenses.reduce((acc, expense) => {
+        acc[expense.category] = (acc[expense.category] || 0) + toBrl(expense);
+        return acc;
+      }, {});
+
+      const entries = Object.entries(totalsByCategory).sort((a, b) => b[1] - a[1]);
+      const total = entries.reduce((sum, [, value]) => sum + value, 0);
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = Math.min(width, height) * 0.34;
+
+      if (!entries.length) {
+        context.strokeStyle = "rgba(148, 163, 184, 0.22)";
+        context.lineWidth = 26;
+        context.beginPath();
+        context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        context.stroke();
+        drawCenterLabel(context, centerX, centerY, "Sem dados", "R$ 0,00");
+        elements.legend.innerHTML = "";
+        return;
+      }
+
+      let startAngle = -Math.PI / 2;
+      entries.forEach(([category, value]) => {
+        const slice = (value / total) * Math.PI * 2;
+        context.strokeStyle = categoryColors[category] || categoryColors.Outros;
+        context.lineWidth = 28;
+        context.lineCap = "round";
+        context.beginPath();
+        context.arc(centerX, centerY, radius, startAngle, startAngle + slice - 0.04);
+        context.stroke();
+        startAngle += slice;
+      });
+
+      drawCenterLabel(context, centerX, centerY, "Total", brlFormatter.format(total));
+      elements.legend.innerHTML = entries.map(([category, value]) => `
+        <span class="legend-item">
+          <span class="swatch" style="background:${categoryColors[category] || categoryColors.Outros}"></span>
+          ${escapeHtml(category)} (${Math.round((value / total) * 100)}%)
+        </span>
+      `).join("");
+    }
+
+    function drawCenterLabel(context, x, y, label, value) {
+      context.textAlign = "center";
+      context.fillStyle = "#94a3b8";
+      context.font = "12px Inter, system-ui, sans-serif";
+      context.fillText(label, x, y - 6);
+      context.fillStyle = "#e5edf8";
+      context.font = "700 18px Inter, system-ui, sans-serif";
+      context.fillText(value, x, y + 18);
+    }
+
+    function setupCanvas(canvas) {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+      const context = canvas.getContext("2d");
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      return context;
+    }
+
+    function getCurrentMonthExpenses() {
+      const currentMonth = monthKey(new Date());
+      return state.expenses
+        .filter((expense) => monthKey(expense.date) === currentMonth)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    function toBrl(expense) {
+      return expense.currency === "USD" ? expense.amount * state.rate : expense.amount;
+    }
+
+    function parseMoney(value) {
+      const raw = String(value).trim().replace(/\s/g, "");
+      const hasComma = raw.includes(",");
+      const hasDot = raw.includes(".");
+      let normalized = raw;
+
+      if (hasComma && hasDot) {
+        normalized = raw.lastIndexOf(",") > raw.lastIndexOf(".")
+          ? raw.replace(/\./g, "").replace(",", ".")
+          : raw.replace(/,/g, "");
+      } else if (hasComma) {
+        normalized = raw.replace(",", ".");
+      }
+
+      return Number(normalized);
+    }
+
+    function monthKey(value) {
+      const date = value instanceof Date ? value : new Date(`${value}T00:00:00`);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function daysInCurrentMonth() {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    }
+
+    function toDateInputValue(date) {
+      return date.toISOString().slice(0, 10);
+    }
+
+    function formatDate(value) {
+      return new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "short"
+      }).format(new Date(`${value}T00:00:00`));
+    }
+
+    function formatTime(value) {
+      return new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(value);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function roundRect(context, x, y, width, height, radius) {
+      const safeRadius = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + safeRadius, y);
+      context.arcTo(x + width, y, x + width, y + height, safeRadius);
+      context.arcTo(x + width, y + height, x, y + height, safeRadius);
+      context.arcTo(x, y + height, x, y, safeRadius);
+      context.arcTo(x, y, x + width, y, safeRadius);
+      context.closePath();
+    }
+
+    window.addEventListener("resize", render);
+  </script>
+</body>
+</html>
