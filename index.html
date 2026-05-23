@@ -918,7 +918,7 @@
       <p id="password-message">Este PDF está protegido. Informe a senha para importar a fatura.</p>
       <div class="field">
         <label for="pdf-password">Senha</label>
-        <input id="pdf-password" type="password" autocomplete="current-password" placeholder="Digite a senha do PDF">
+        <input id="pdf-password" type="password" autocomplete="off" placeholder="Digite a senha do PDF">
       </div>
       <div class="password-actions">
         <button class="button secondary" value="cancel" type="submit">Cancelar</button>
@@ -1275,6 +1275,7 @@
 
       setImportStatus(`Lendo ${newEntries.length} PDF(s) de ${source}...`);
       const importedExpenses = [];
+      const errorDetails = [];
       let failedFiles = 0;
       let emptyFiles = 0;
       let lockedFiles = 0;
@@ -1289,6 +1290,7 @@
             state.importedFileKeys.add(key);
           } else {
             emptyFiles += 1;
+            errorDetails.push(`${entry.file.name}: aberto, mas sem texto/lançamentos detectados`);
           }
         } catch (error) {
           if (isPasswordError(error)) {
@@ -1296,6 +1298,7 @@
           } else {
             failedFiles += 1;
           }
+          errorDetails.push(`${entry.file.name}: ${formatPdfError(error)}`);
           console.error(error);
         }
       }
@@ -1326,7 +1329,8 @@
         return;
       }
 
-      setImportStatus(`${parts.join("; ")}.`, failedFiles ? "error" : "success");
+      const detail = errorDetails.length ? ` Detalhe: ${errorDetails.slice(0, 2).join(" | ")}` : "";
+      setImportStatus(`${parts.join("; ")}.${detail}`, failedFiles || lockedFiles ? "error" : "success");
     }
 
     function isPdfFile(file) {
@@ -1338,7 +1342,22 @@
     }
 
     function isPasswordError(error) {
-      return /senha|password|protected/i.test(error?.message || error?.name || "");
+      return isPdfPasswordException(error) || /senha|password|protected/i.test(error?.message || error?.name || "");
+    }
+
+    function isPdfPasswordException(error) {
+      const responses = window.pdfjsLib?.PasswordResponses || {};
+      return error?.name === "PasswordException"
+        || error?.code === responses.NEED_PASSWORD
+        || error?.code === responses.INCORRECT_PASSWORD;
+    }
+
+    function formatPdfError(error) {
+      if (isPdfPasswordException(error)) {
+        return "senha ausente ou incorreta";
+      }
+
+      return error?.message || error?.name || "erro desconhecido";
     }
 
     async function extractPdfText(file) {
@@ -1347,32 +1366,7 @@
       }
 
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-      const data = new Uint8Array(await file.arrayBuffer());
-      const loadingTask = window.pdfjsLib.getDocument({ data });
-      let passwordCancelled = false;
-
-      loadingTask.onPassword = (updatePassword, reason) => {
-        requestPdfPassword(file.name, reason).then((password) => {
-          if (password) {
-            updatePassword(password);
-            return;
-          }
-
-          passwordCancelled = true;
-          loadingTask.destroy();
-        });
-      };
-
-      let pdf;
-      try {
-        pdf = await loadingTask.promise;
-      } catch (error) {
-        if (passwordCancelled) {
-          throw new Error("Senha do PDF não informada.");
-        }
-        throw error;
-      }
-
+      const pdf = await loadPdfWithOptionalPassword(file);
       const pages = [];
 
       for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
@@ -1382,6 +1376,36 @@
       }
 
       return pages.join("\n");
+    }
+
+    async function loadPdfWithOptionalPassword(file) {
+      let password = null;
+      let reason = window.pdfjsLib?.PasswordResponses?.NEED_PASSWORD;
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const data = new Uint8Array(await file.arrayBuffer());
+        try {
+          return await window.pdfjsLib.getDocument({
+            data,
+            password: password || undefined,
+            disableAutoFetch: false,
+            disableStream: false,
+            stopAtErrors: false
+          }).promise;
+        } catch (error) {
+          if (!isPdfPasswordException(error)) {
+            throw error;
+          }
+
+          reason = error.code || reason;
+          password = await requestPdfPassword(file.name, reason);
+          if (!password) {
+            throw new Error("Senha do PDF não informada.");
+          }
+        }
+      }
+
+      throw new Error("Senha do PDF incorreta após 3 tentativas.");
     }
 
     function requestPdfPassword(fileName, reason) {
