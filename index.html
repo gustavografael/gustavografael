@@ -528,7 +528,7 @@
             </span>
           </div>
           <div class="quote-value" id="quote-value">R$ --</div>
-          <div class="quote-meta" id="quote-meta">Cotação USD-BRL em tempo real via AwesomeAPI.</div>
+          <div class="quote-meta" id="quote-meta">Cotação USD-BRL em tempo real com fallback automático.</div>
         </div>
         <div class="manual-rate" aria-label="Cotação manual">
           <input id="manual-rate" inputmode="decimal" placeholder="Ajuste manual: 5,10" aria-label="Cotação manual do dólar">
@@ -640,7 +640,18 @@
   </main>
 
   <script>
-    const API_URL = "https://economia.awesomeapi.com.br/json/last/USD-BRL";
+    const RATE_PROVIDERS = [
+      {
+        name: "open.er-api.com",
+        url: "https://open.er-api.com/v6/latest/USD",
+        parse: (data) => Number(data.rates?.BRL)
+      },
+      {
+        name: "AwesomeAPI",
+        url: "https://economia.awesomeapi.com.br/json/last/USD-BRL",
+        parse: (data) => Number(data.USDBRL?.bid)
+      }
+    ];
     const STORAGE_KEY = "finance-dashboard-expenses-v1";
     const RATE_KEY = "finance-dashboard-rate-v1";
     const REFRESH_INTERVAL = 60_000;
@@ -733,27 +744,40 @@
       updateQuoteUi("loading", "Buscando...");
 
       try {
-        const response = await fetch(API_URL, { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error("Falha ao consultar cotação");
-        }
-
-        const data = await response.json();
-        const quote = Number(data.USDBRL?.bid);
-        if (!Number.isFinite(quote) || quote <= 0) {
-          throw new Error("Cotação inválida");
-        }
-
-        state.rate = quote;
-        localStorage.setItem(RATE_KEY, String(quote));
+        const quote = await getLatestDollarRate();
+        state.rate = quote.value;
+        localStorage.setItem(RATE_KEY, String(quote.value));
         updateQuoteUi("online", "Ao vivo");
-        elements.quoteMeta.textContent = `Atualizado em ${formatTime(new Date())}. Fonte: AwesomeAPI.`;
+        elements.quoteMeta.textContent = `Atualizado em ${formatTime(new Date())}. Fonte: ${quote.source}.`;
         render();
       } catch (error) {
         updateQuoteUi("offline", "Modo manual");
         elements.quoteMeta.textContent = "Não foi possível buscar a cotação agora. A taxa salva/manual continua ativa.";
         render();
       }
+    }
+
+    async function getLatestDollarRate() {
+      for (const provider of RATE_PROVIDERS) {
+        try {
+          const response = await fetch(provider.url, { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`Falha em ${provider.name}`);
+          }
+
+          const data = await response.json();
+          const value = provider.parse(data);
+          if (!Number.isFinite(value) || value <= 0) {
+            throw new Error(`Cotação inválida em ${provider.name}`);
+          }
+
+          return { value, source: provider.name };
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+
+      throw new Error("Nenhuma cotação disponível");
     }
 
     function updateQuoteUi(mode, label) {
