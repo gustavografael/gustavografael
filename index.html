@@ -131,6 +131,56 @@
       margin-top: 28px;
     }
 
+    .banking-card {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 16px;
+      max-width: 430px;
+      margin-top: 28px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 26px;
+      background:
+        linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(15, 23, 42, 0.24) 42%, rgba(167, 139, 250, 0.32)),
+        rgba(15, 23, 42, 0.72);
+      box-shadow: 0 24px 60px rgba(14, 165, 233, 0.18);
+    }
+
+    .banking-card::before {
+      position: absolute;
+      inset: 18px 18px auto auto;
+      width: 52px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.16));
+      content: "";
+    }
+
+    .banking-card span {
+      color: rgba(226, 232, 240, 0.76);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .banking-card strong {
+      display: block;
+      margin-top: 6px;
+      font-size: clamp(1.7rem, 3vw, 2.35rem);
+      letter-spacing: -0.05em;
+    }
+
+    .banking-card-bottom {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      color: rgba(226, 232, 240, 0.82);
+      font-size: 0.9rem;
+    }
+
     .button {
       display: inline-flex;
       gap: 10px;
@@ -161,6 +211,12 @@
     .button.danger {
       background: rgba(251, 113, 133, 0.16);
       color: #fecdd3;
+    }
+
+    .button.primary-action {
+      min-height: 54px;
+      padding-inline: 22px;
+      box-shadow: 0 18px 42px rgba(14, 165, 233, 0.28);
     }
 
     .quote-card {
@@ -210,6 +266,20 @@
       color: var(--muted);
       font-size: 0.9rem;
       line-height: 1.5;
+    }
+
+    .refresh-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 8px 11px;
+      border: 1px solid rgba(52, 211, 153, 0.2);
+      border-radius: 999px;
+      background: rgba(52, 211, 153, 0.1);
+      color: #bbf7d0;
+      font-size: 0.82rem;
+      font-weight: 800;
     }
 
     .manual-rate {
@@ -344,6 +414,27 @@
       padding: 16px;
     }
 
+    .chart-panel.featured {
+      grid-column: 1 / -1;
+      background:
+        linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(167, 139, 250, 0.1)),
+        rgba(2, 6, 23, 0.3);
+    }
+
+    .chart-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .chart-kicker {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
     canvas {
       display: block;
       width: 100%;
@@ -465,6 +556,26 @@
       text-align: center;
     }
 
+    .floating-add {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 58px;
+      height: 58px;
+      border: 0;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--primary), var(--success));
+      color: #03101b;
+      font-size: 2rem;
+      font-weight: 900;
+      text-decoration: none;
+      box-shadow: 0 22px 48px rgba(14, 165, 233, 0.36);
+    }
+
     @media (max-width: 980px) {
       .hero,
       .grid,
@@ -499,6 +610,16 @@
       .amount {
         text-align: left;
       }
+
+      .banking-card-bottom {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .floating-add {
+        right: 16px;
+        bottom: 16px;
+      }
     }
   </style>
 </head>
@@ -513,8 +634,18 @@
           para entender para onde seu dinheiro está indo.
         </p>
         <div class="hero-actions">
-          <a class="button" href="#expense-form">Adicionar despesa</a>
+          <a class="button primary-action" href="#expense-form">+ Adicionar despesa</a>
           <button class="button secondary" id="seed-demo" type="button">Carregar exemplo</button>
+        </div>
+        <div class="banking-card" aria-label="Cartão de resumo financeiro">
+          <div>
+            <span>Saldo planejado</span>
+            <strong id="banking-balance">R$ 0,00</strong>
+          </div>
+          <div class="banking-card-bottom">
+            <div>Finance Control</div>
+            <div id="banking-month">Mês atual</div>
+          </div>
         </div>
       </div>
 
@@ -529,6 +660,7 @@
           </div>
           <div class="quote-value" id="quote-value">R$ --</div>
           <div class="quote-meta" id="quote-meta">Cotação USD-BRL em tempo real com fallback automático.</div>
+          <div class="refresh-note" id="refresh-note">Atualiza automaticamente a cada 60s</div>
         </div>
         <div class="manual-rate" aria-label="Cotação manual">
           <input id="manual-rate" inputmode="decimal" placeholder="Ajuste manual: 5,10" aria-label="Cotação manual do dólar">
@@ -617,6 +749,13 @@
         </div>
 
         <div class="charts">
+          <article class="chart-panel featured">
+            <div class="chart-title-row">
+              <h3>Gastos mensais</h3>
+              <span class="chart-kicker">Últimos 6 meses em BRL</span>
+            </div>
+            <canvas id="monthly-chart" width="960" height="300" aria-label="Gráfico de gastos mensais"></canvas>
+          </article>
           <article class="chart-panel">
             <h3>Evolução diária</h3>
             <canvas id="bar-chart" width="720" height="300" aria-label="Gráfico de gastos por dia"></canvas>
@@ -637,6 +776,7 @@
     <p class="footer-note">
       A cotação é atualizada automaticamente a cada 60 segundos. Caso a API esteja indisponível, informe uma taxa manual.
     </p>
+    <a class="floating-add" href="#expense-form" aria-label="Adicionar nova despesa">+</a>
   </main>
 
   <script>
@@ -685,12 +825,15 @@
       manualRate: document.querySelector("#manual-rate"),
       refreshRate: document.querySelector("#refresh-rate"),
       monthLabel: document.querySelector("#month-label"),
+      bankingBalance: document.querySelector("#banking-balance"),
+      bankingMonth: document.querySelector("#banking-month"),
       totalBrl: document.querySelector("#total-brl"),
       totalUsd: document.querySelector("#total-usd"),
       expenseCount: document.querySelector("#expense-count"),
       list: document.querySelector("#expense-list"),
       clear: document.querySelector("#clear-expenses"),
       seedDemo: document.querySelector("#seed-demo"),
+      monthlyChart: document.querySelector("#monthly-chart"),
       barChart: document.querySelector("#bar-chart"),
       donutChart: document.querySelector("#donut-chart"),
       legend: document.querySelector("#legend")
@@ -709,6 +852,10 @@
     const monthFormatter = new Intl.DateTimeFormat("pt-BR", {
       month: "long",
       year: "numeric"
+    });
+
+    const shortMonthFormatter = new Intl.DateTimeFormat("pt-BR", {
+      month: "short"
     });
 
     init();
@@ -867,17 +1014,21 @@
     function seedDemoData() {
       const today = new Date();
       const samples = [
-        ["Aluguel", 2200, "BRL", "Moradia", 2],
-        ["Supermercado", 460.35, "BRL", "Alimentação", 5],
-        ["Spotify", 10.99, "USD", "Assinaturas", 8],
-        ["Uber", 72.8, "BRL", "Transporte", 13],
-        ["Curso online", 49, "USD", "Lazer", 18],
-        ["Farmácia", 132.9, "BRL", "Saúde", 21]
+        ["Aluguel", 2200, "BRL", "Moradia", 0, 2],
+        ["Supermercado", 460.35, "BRL", "Alimentação", 0, 5],
+        ["Spotify", 10.99, "USD", "Assinaturas", 0, 8],
+        ["Uber", 72.8, "BRL", "Transporte", 0, 13],
+        ["Curso online", 49, "USD", "Lazer", 0, 18],
+        ["Farmácia", 132.9, "BRL", "Saúde", 0, 21],
+        ["Academia", 129.9, "BRL", "Saúde", 1, 4],
+        ["Viagem", 180, "USD", "Lazer", 2, 11],
+        ["Internet", 119.9, "BRL", "Moradia", 3, 7],
+        ["Restaurante", 245.5, "BRL", "Alimentação", 4, 16],
+        ["Software", 29, "USD", "Assinaturas", 5, 9]
       ];
 
-      const demoExpenses = samples.map(([description, amount, currency, category, dayOffset]) => {
-        const date = new Date(today);
-        date.setDate(Math.max(1, today.getDate() - dayOffset));
+      const demoExpenses = samples.map(([description, amount, currency, category, monthOffset, day]) => {
+        const date = new Date(today.getFullYear(), today.getMonth() - monthOffset, day);
         return {
           id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${description}`,
           description,
@@ -904,12 +1055,15 @@
       }, { brl: 0, usd: 0 });
 
       elements.monthLabel.textContent = `Resumo de ${monthFormatter.format(new Date())}`;
+      elements.bankingBalance.textContent = brlFormatter.format(totals.brl);
+      elements.bankingMonth.textContent = monthFormatter.format(new Date());
       elements.totalBrl.textContent = brlFormatter.format(totals.brl);
       elements.totalUsd.textContent = usdFormatter.format(totals.usd);
       elements.expenseCount.textContent = String(monthly.length);
       elements.quoteValue.textContent = brlFormatter.format(state.rate);
 
       renderExpenses(monthly);
+      drawMonthlyChart();
       drawBarChart(monthly);
       drawDonutChart(monthly);
     }
@@ -950,6 +1104,59 @@
           </article>
         `;
       }).join("");
+    }
+
+
+    function drawMonthlyChart() {
+      const canvas = elements.monthlyChart;
+      const context = setupCanvas(canvas);
+      const { width, height } = canvas.getBoundingClientRect();
+      context.clearRect(0, 0, width, height);
+
+      const months = getLastMonths(6);
+      const totals = months.map((month) => state.expenses
+        .filter((expense) => monthKey(expense.date) === month.key)
+        .reduce((sum, expense) => sum + toBrl(expense), 0));
+
+      const padding = { top: 24, right: 18, bottom: 42, left: 54 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const max = Math.max(...totals, 1);
+
+      context.strokeStyle = "rgba(148, 163, 184, 0.16)";
+      context.lineWidth = 1;
+      for (let step = 0; step <= 3; step += 1) {
+        const y = padding.top + plotHeight - (plotHeight / 3) * step;
+        context.beginPath();
+        context.moveTo(padding.left, y);
+        context.lineTo(padding.left + plotWidth, y);
+        context.stroke();
+      }
+
+      const gap = 16;
+      const barWidth = Math.max(20, plotWidth / months.length - gap);
+      totals.forEach((value, index) => {
+        const barHeight = (value / max) * plotHeight;
+        const x = padding.left + index * (plotWidth / months.length) + gap / 2;
+        const y = padding.top + plotHeight - barHeight;
+        const gradient = context.createLinearGradient(0, y, 0, padding.top + plotHeight);
+        gradient.addColorStop(0, "#34d399");
+        gradient.addColorStop(0.55, "#38bdf8");
+        gradient.addColorStop(1, "rgba(56, 189, 248, 0.18)");
+        context.fillStyle = gradient;
+        roundRect(context, x, y, barWidth, barHeight || 3, 10);
+        context.fill();
+
+        context.fillStyle = "#cbd5e1";
+        context.font = "700 12px Inter, system-ui, sans-serif";
+        context.textAlign = "center";
+        context.fillText(months[index].label, x + barWidth / 2, height - 16);
+      });
+
+      context.fillStyle = "#94a3b8";
+      context.font = "12px Inter, system-ui, sans-serif";
+      context.textAlign = "left";
+      context.fillText(brlFormatter.format(max), 8, padding.top + 4);
     }
 
     function drawBarChart(expenses) {
@@ -1073,6 +1280,17 @@
       return state.expenses
         .filter((expense) => monthKey(expense.date) === currentMonth)
         .sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    function getLastMonths(count) {
+      const now = new Date();
+      return Array.from({ length: count }, (_, index) => {
+        const date = new Date(now.getFullYear(), now.getMonth() - (count - index - 1), 1);
+        return {
+          key: monthKey(date),
+          label: shortMonthFormatter.format(date).replace(".", "")
+        };
+      });
     }
 
     function toBrl(expense) {
