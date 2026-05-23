@@ -377,6 +377,39 @@
       white-space: nowrap;
     }
 
+    .password-dialog {
+      width: min(420px, calc(100% - 32px));
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: var(--radius-xl);
+      background: rgba(15, 23, 42, 0.98);
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+
+    .password-dialog::backdrop {
+      background: rgba(2, 6, 23, 0.78);
+      backdrop-filter: blur(6px);
+    }
+
+    .password-card {
+      display: grid;
+      gap: 14px;
+      margin: 0;
+      padding: 8px;
+    }
+
+    .password-card p {
+      margin: 0;
+      color: var(--muted-strong);
+      line-height: 1.5;
+    }
+
+    .password-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
     .field {
       display: grid;
       gap: 8px;
@@ -798,7 +831,7 @@
         <section class="import-panel" aria-labelledby="import-title">
           <div>
             <h3 id="import-title">Importar fatura do cartão</h3>
-            <p>Envie um PDF ou selecione a pasta sincronizada do OneDrive para detectar lançamentos, separar por categoria e atualizar seus gráficos automaticamente. O app nunca pede senha.</p>
+            <p>Envie um PDF ou selecione a pasta sincronizada do OneDrive para detectar lançamentos, separar por categoria e atualizar seus gráficos automaticamente. Se o PDF tiver senha, ela será pedida no navegador e não será salva.</p>
           </div>
           <div class="import-actions">
             <label class="button secondary" for="pdf-file">Importar PDF</label>
@@ -879,6 +912,21 @@
     <a class="floating-add" href="#expense-form" aria-label="Adicionar nova despesa">+</a>
   </main>
 
+  <dialog class="password-dialog" id="password-dialog" aria-labelledby="password-title">
+    <form class="password-card" method="dialog">
+      <h2 id="password-title">Senha do PDF</h2>
+      <p id="password-message">Este PDF está protegido. Informe a senha para importar a fatura.</p>
+      <div class="field">
+        <label for="pdf-password">Senha</label>
+        <input id="pdf-password" type="password" autocomplete="current-password" placeholder="Digite a senha do PDF">
+      </div>
+      <div class="password-actions">
+        <button class="button secondary" value="cancel" type="submit">Cancelar</button>
+        <button class="button" value="confirm" type="submit">Desbloquear PDF</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" referrerpolicy="no-referrer"></script>
   <script>
     const RATE_PROVIDERS = [
@@ -938,6 +986,9 @@
       pdfFolder: document.querySelector("#pdf-folder"),
       connectFolder: document.querySelector("#connect-folder"),
       importStatus: document.querySelector("#import-status"),
+      passwordDialog: document.querySelector("#password-dialog"),
+      passwordMessage: document.querySelector("#password-message"),
+      pdfPassword: document.querySelector("#pdf-password"),
       quoteValue: document.querySelector("#quote-value"),
       quoteMeta: document.querySelector("#quote-meta"),
       quoteDot: document.querySelector("#quote-dot"),
@@ -1226,6 +1277,7 @@
       const importedExpenses = [];
       let failedFiles = 0;
       let emptyFiles = 0;
+      let lockedFiles = 0;
 
       for (const entry of newEntries) {
         const key = createFileKey(entry.file, entry.path);
@@ -1239,7 +1291,11 @@
             emptyFiles += 1;
           }
         } catch (error) {
-          failedFiles += 1;
+          if (isPasswordError(error)) {
+            lockedFiles += 1;
+          } else {
+            failedFiles += 1;
+          }
           console.error(error);
         }
       }
@@ -1257,6 +1313,9 @@
       }
       if (emptyFiles) {
         parts.push(`${emptyFiles} PDF(s) sem lançamentos detectados`);
+      }
+      if (lockedFiles) {
+        parts.push(`${lockedFiles} PDF(s) protegido(s) não importado(s)`);
       }
       if (failedFiles) {
         parts.push(`${failedFiles} PDF(s) com erro de leitura`);
@@ -1278,6 +1337,10 @@
       return `${path || file.name}:${file.size}:${file.lastModified}`;
     }
 
+    function isPasswordError(error) {
+      return /senha|password|protected/i.test(error?.message || error?.name || "");
+    }
+
     async function extractPdfText(file) {
       if (!window.pdfjsLib) {
         throw new Error("PDF.js não foi carregado");
@@ -1285,7 +1348,31 @@
 
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
       const data = new Uint8Array(await file.arrayBuffer());
-      const pdf = await window.pdfjsLib.getDocument({ data }).promise;
+      const loadingTask = window.pdfjsLib.getDocument({ data });
+      let passwordCancelled = false;
+
+      loadingTask.onPassword = (updatePassword, reason) => {
+        requestPdfPassword(file.name, reason).then((password) => {
+          if (password) {
+            updatePassword(password);
+            return;
+          }
+
+          passwordCancelled = true;
+          loadingTask.destroy();
+        });
+      };
+
+      let pdf;
+      try {
+        pdf = await loadingTask.promise;
+      } catch (error) {
+        if (passwordCancelled) {
+          throw new Error("Senha do PDF não informada.");
+        }
+        throw error;
+      }
+
       const pages = [];
 
       for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
@@ -1295,6 +1382,34 @@
       }
 
       return pages.join("\n");
+    }
+
+    function requestPdfPassword(fileName, reason) {
+      const isRetry = reason === window.pdfjsLib?.PasswordResponses?.INCORRECT_PASSWORD;
+      const message = isRetry
+        ? `A senha informada para ${fileName} está incorreta. Digite novamente para importar a fatura.`
+        : `O PDF ${fileName} está protegido. Digite a senha no navegador para importar a fatura.`;
+
+      if (!elements.passwordDialog.showModal) {
+        return Promise.resolve(window.prompt(message));
+      }
+
+      return new Promise((resolve) => {
+        elements.passwordMessage.textContent = message;
+        elements.pdfPassword.value = "";
+
+        const handleClose = () => {
+          const password = elements.passwordDialog.returnValue === "confirm"
+            ? elements.pdfPassword.value
+            : null;
+          elements.pdfPassword.value = "";
+          resolve(password || null);
+        };
+
+        elements.passwordDialog.addEventListener("close", handleClose, { once: true });
+        elements.passwordDialog.showModal();
+        setTimeout(() => elements.pdfPassword.focus(), 0);
+      });
     }
 
     function groupPdfTextItems(items) {
