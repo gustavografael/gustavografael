@@ -32,6 +32,10 @@ Aplicação full-stack para executar troubleshooting de firewalls Check Point vi
 - Backend: Node.js, Express, node-ssh, Zod.
 - Frontend: React, Vite, Tailwind CSS, lucide-react.
 
+## Referência para próximos botões
+
+A referência oficial de APIs Check Point informada para futuras integrações foi registrada em [`docs/checkpoint-api-reference.md`](docs/checkpoint-api-reference.md).
+
 ## Como executar
 
 ```bash
