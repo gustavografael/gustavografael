@@ -29,6 +29,30 @@ export async function fetchRun(id) {
   return parseResponse(response);
 }
 
+export async function previewRouting(payload) {
+  const response = await fetch("/api/routing/preview", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export async function applyRoutingPlan(payload) {
+  const response = await fetch("/api/routing/apply", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
 export function downloadReport(id) {
   window.open(`/api/reports/${id}/export`, "_blank", "noopener,noreferrer");
 }

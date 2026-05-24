@@ -4,6 +4,7 @@ Aplicação full-stack para executar troubleshooting de firewalls Check Point vi
 
 ## Funcionalidades
 
+- Página principal com botões de troubleshooting.
 - Formulário com hostname, IP do gateway, porta e credenciais SSH.
 - Botão **Verificar Saúde do Ambiente**.
 - Execução de comandos Check Point/Linux via `node-ssh`.
@@ -26,6 +27,13 @@ Aplicação full-stack para executar troubleshooting de firewalls Check Point vi
 - Histórico local das execuções.
 - Exportação do relatório em Markdown.
 - Parsing inteligente com recomendações automáticas.
+- Botão **Validar Roteamento das Caixas** para clusters HA:
+  - Executa `cphaprob stat` nas duas caixas para identificar active/standby.
+  - Executa `show route summary` via `clish`.
+  - Compara rotas da caixa ativa contra standby.
+  - Mostra diferenças e o plano do que será alterado.
+  - Pede confirmação antes de aplicar correção.
+  - Replica automaticamente apenas rotas estáticas parseáveis da ativa para o standby.
 
 ## Stack
 
@@ -54,6 +62,8 @@ PORT=3001
 SSH_CONNECT_TIMEOUT_MS=15000
 SSH_COMMAND_TIMEOUT_MS=30000
 HISTORY_LIMIT=25
+ROUTING_PLAN_TTL_MS=600000
+ROUTING_SUMMARY_COMMAND=clish -c "show route summary"
 ```
 
 ## Comandos executados no firewall
@@ -80,6 +90,24 @@ cphaprob syncstat
 fw tab -t connections -s
 cpstat os -f sensors
 ```
+
+## Fluxo de validação de roteamento HA
+
+O segundo botão usa duas etapas para evitar mudanças automáticas sem revisão:
+
+1. **Preview**
+   - Conecta nas duas caixas informadas.
+   - Executa `cphaprob stat` para validar qual membro está `active` e qual está `standby`.
+   - Executa `show route summary`.
+   - Mostra rotas ausentes no standby, rotas extras no standby e os comandos de correção gerados.
+
+2. **Correção com confirmação**
+   - O usuário precisa digitar `CONFIRMAR`.
+   - Antes de aplicar, o backend valida novamente que o alvo ainda está como standby.
+   - Executa no standby somente comandos Gaia gerados para rotas estáticas parseáveis.
+   - Executa `save config` ao final.
+
+Diferenças que não forem parseáveis como rota estática aparecem no output como validação manual, sem execução automática.
 
 ## Observações de segurança
 

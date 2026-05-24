@@ -2,18 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  ArrowLeft,
   CheckCircle2,
   Clock3,
   Download,
+  GitCompareArrows,
   History,
   Loader2,
   Network,
+  Route,
   Server,
   ShieldCheck,
   TerminalSquare,
   XCircle
 } from "lucide-react";
-import { downloadReport, fetchHistory, fetchRun, runHealthCheck } from "./lib/api";
+import { applyRoutingPlan, downloadReport, fetchHistory, fetchRun, previewRouting, runHealthCheck } from "./lib/api";
 
 const STATUS_META = {
   healthy: {
@@ -46,7 +49,13 @@ const STATUS_META = {
   }
 };
 
-const INITIAL_FORM = {
+const ROUTING_STATUS_META = {
+  synced: STATUS_META.healthy,
+  different: STATUS_META.warning,
+  blocked: STATUS_META.critical
+};
+
+const INITIAL_HEALTH_FORM = {
   hostname: "",
   gatewayIp: "",
   port: 22,
@@ -56,14 +65,35 @@ const INITIAL_FORM = {
   passphrase: ""
 };
 
+const INITIAL_ROUTING_FORM = {
+  firewalls: [
+    { hostname: "", gatewayIp: "", port: 22 },
+    { hostname: "", gatewayIp: "", port: 22 }
+  ],
+  sharedCredentials: {
+    port: 22,
+    username: "",
+    password: "",
+    privateKey: "",
+    passphrase: ""
+  }
+};
+
+function statusLabel(status) {
+  if (status === "synced") return "Sincronizado";
+  if (status === "different") return "Diferenças";
+  if (status === "blocked") return "Bloqueado";
+  return STATUS_META[status]?.label ?? "Indeterminado";
+}
+
 function StatusBadge({ status }) {
-  const meta = STATUS_META[status] ?? STATUS_META.unknown;
+  const meta = ROUTING_STATUS_META[status] ?? STATUS_META[status] ?? STATUS_META.unknown;
   const Icon = meta.icon;
 
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${meta.badge}`}>
       <Icon className="h-3.5 w-3.5" />
-      {meta.label}
+      {statusLabel(status)}
     </span>
   );
 }
@@ -82,11 +112,100 @@ function inputClassName() {
   return "w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:bg-white/[0.14] focus:ring-4 focus:ring-cyan-300/10";
 }
 
-function SummaryTiles({ report }) {
-  if (!report) {
-    return null;
-  }
+function Shell({ children }) {
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0e7490_0,#0f172a_35%,#020617_100%)] text-white">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">{children}</div>
+    </main>
+  );
+}
 
+function Header({ eyebrow = "Firewall Check Point", title, description, right, onBack }) {
+  return (
+    <header className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-8 shadow-2xl shadow-black/30 backdrop-blur">
+      {onBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-6 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-bold text-slate-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para botões
+        </button>
+      ) : null}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100">
+            <Network className="h-4 w-4" />
+            {eyebrow}
+          </div>
+          <h1 className="max-w-4xl text-4xl font-black tracking-tight sm:text-5xl">{title}</h1>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{description}</p>
+        </div>
+        {right}
+      </div>
+    </header>
+  );
+}
+
+function HomePage({ onOpenHealth, onOpenRouting }) {
+  const actions = [
+    {
+      title: "Avaliar saúde firewall",
+      description: "Executa comandos de CPU, memória, interfaces, CoreXL, SecureXL, disco, cluster, logs, hardware e conexões.",
+      icon: ShieldCheck,
+      action: onOpenHealth,
+      cta: "Verificar Saúde do Ambiente"
+    },
+    {
+      title: "Validar roteamento HA",
+      description: "Executa show route summary nas duas caixas, identifica active/standby, compara rotas e prepara correção com confirmação.",
+      icon: Route,
+      action: onOpenRouting,
+      cta: "Validar Roteamento das Caixas"
+    }
+  ];
+
+  return (
+    <Shell>
+      <Header
+        title="Dashboard de troubleshooting por botões"
+        description="Escolha uma automação para diagnosticar firewalls Check Point. Cada botão abre uma página secundária com output, diff e ações seguras."
+        right={
+          <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <p className="text-sm text-slate-400">Botões disponíveis</p>
+            <p className="mt-2 text-3xl font-black text-cyan-100">2</p>
+          </div>
+        }
+      />
+
+      <section className="grid gap-6 md:grid-cols-2">
+        {actions.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.title}
+              type="button"
+              onClick={item.action}
+              className="group rounded-[2rem] border border-white/10 bg-white/[0.06] p-7 text-left shadow-2xl shadow-black/20 backdrop-blur transition hover:-translate-y-1 hover:border-cyan-300/50 hover:bg-cyan-300/10"
+            >
+              <div className="mb-6 inline-flex rounded-3xl bg-cyan-300/10 p-4 text-cyan-200 ring-1 ring-cyan-300/20">
+                <Icon className="h-8 w-8" />
+              </div>
+              <h2 className="text-2xl font-black text-white">{item.title}</h2>
+              <p className="mt-3 min-h-20 text-sm leading-6 text-slate-300">{item.description}</p>
+              <span className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition group-hover:bg-cyan-200">
+                {item.cta}
+              </span>
+            </button>
+          );
+        })}
+      </section>
+    </Shell>
+  );
+}
+
+function SummaryTiles({ report }) {
   const counts = report.sections.reduce(
     (acc, section) => {
       acc[section.status] = (acc[section.status] ?? 0) + 1;
@@ -153,7 +272,6 @@ function SectionCard({ section }) {
         </div>
         <StatusBadge status={section.status} />
       </div>
-
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {section.metrics.map((item) => (
           <div key={`${section.id}-${item.label}`} className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -162,7 +280,6 @@ function SectionCard({ section }) {
           </div>
         ))}
       </div>
-
       {section.recommendations.length ? (
         <div className="mt-5 space-y-2">
           {section.recommendations.map((item) => (
@@ -172,7 +289,6 @@ function SectionCard({ section }) {
           ))}
         </div>
       ) : null}
-
       <details className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
         <summary className="cursor-pointer text-sm font-semibold text-slate-200">Ver saídas brutas dos comandos</summary>
         <div className="mt-4 space-y-4">
@@ -195,7 +311,7 @@ function HistoryPanel({ history, onSelectRun, selectedRunId }) {
     <aside className="rounded-3xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/20 backdrop-blur">
       <div className="mb-4 flex items-center gap-2">
         <History className="h-5 w-5 text-cyan-300" />
-        <h2 className="text-lg font-bold text-white">Histórico de execução</h2>
+        <h2 className="text-lg font-bold text-white">Histórico de saúde</h2>
       </div>
       {history.length ? (
         <div className="space-y-3">
@@ -227,8 +343,8 @@ function HistoryPanel({ history, onSelectRun, selectedRunId }) {
   );
 }
 
-function App() {
-  const [form, setForm] = useState(INITIAL_FORM);
+function HealthPage({ onBack }) {
+  const [form, setForm] = useState(INITIAL_HEALTH_FORM);
   const [report, setReport] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -242,8 +358,7 @@ function App() {
   );
 
   async function refreshHistory() {
-    const items = await fetchHistory();
-    setHistory(items);
+    setHistory(await fetchHistory());
   }
 
   useEffect(() => {
@@ -260,10 +375,7 @@ function App() {
     setLoading(true);
 
     try {
-      const result = await runHealthCheck({
-        ...form,
-        port: Number(form.port) || 22
-      });
+      const result = await runHealthCheck({ ...form, port: Number(form.port) || 22 });
       setReport(result);
       await refreshHistory();
     } catch (requestError) {
@@ -287,182 +399,433 @@ function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0e7490_0,#0f172a_35%,#020617_100%)] text-white">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-8 shadow-2xl shadow-black/30 backdrop-blur">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100">
-                <Network className="h-4 w-4" />
-                Firewall Check Point
+    <Shell>
+      <Header
+        onBack={onBack}
+        title="Avaliar saúde firewall"
+        description="Output do botão de saúde: executa comandos via SSH, organiza os dados em cards e gera recomendações automáticas."
+        right={
+          <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <p className="text-sm text-slate-400">Botão atual</p>
+            <p className="mt-2 flex items-center gap-2 text-lg font-bold text-cyan-100">
+              <TerminalSquare className="h-5 w-5" />
+              Verificar Saúde do Ambiente
+            </p>
+          </div>
+        }
+      />
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <section className="space-y-8">
+          <form onSubmit={handleSubmit} className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="rounded-2xl bg-cyan-300/10 p-3 text-cyan-200">
+                <Server className="h-6 w-6" />
               </div>
-              <h1 className="max-w-4xl text-4xl font-black tracking-tight sm:text-5xl">
-                Dashboard de troubleshooting por botões
-              </h1>
-              <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">
-                Execute comandos via SSH, organize os dados em cards coloridos e gere recomendações automáticas para saúde do ambiente.
-              </p>
+              <div>
+                <h2 className="text-xl font-black">Dados do gateway</h2>
+                <p className="text-sm text-slate-400">Informe hostname, IP e credenciais SSH para a execução.</p>
+              </div>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
-              <p className="text-sm text-slate-400">Botão disponível</p>
-              <p className="mt-2 flex items-center gap-2 text-lg font-bold text-cyan-100">
-                <TerminalSquare className="h-5 w-5" />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Hostname">
+                <input className={inputClassName()} value={form.hostname} onChange={(event) => updateForm("hostname", event.target.value)} required />
+              </Field>
+              <Field label="IP do gateway">
+                <input className={inputClassName()} value={form.gatewayIp} onChange={(event) => updateForm("gatewayIp", event.target.value)} required />
+              </Field>
+              <Field label="Porta SSH">
+                <input className={inputClassName()} type="number" min="1" max="65535" value={form.port} onChange={(event) => updateForm("port", event.target.value)} />
+              </Field>
+              <Field label="Usuário SSH">
+                <input className={inputClassName()} value={form.username} onChange={(event) => updateForm("username", event.target.value)} required />
+              </Field>
+              <Field label="Senha SSH" hint="Use senha ou chave privada. A senha não é armazenada no histórico.">
+                <input className={inputClassName()} type="password" value={form.password} onChange={(event) => updateForm("password", event.target.value)} />
+              </Field>
+              <Field label="Passphrase da chave">
+                <input className={inputClassName()} type="password" value={form.passphrase} onChange={(event) => updateForm("passphrase", event.target.value)} />
+              </Field>
+              <div className="md:col-span-2">
+                <Field label="Chave privada SSH" hint="Opcional. Cole a chave PEM quando não usar senha.">
+                  <textarea className={`${inputClassName()} min-h-32 font-mono text-xs`} value={form.privateKey} onChange={(event) => updateForm("privateKey", event.target.value)} />
+                </Field>
+              </div>
+            </div>
+
+            {error ? <div className="mt-5 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div> : null}
+
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                disabled={!canSubmit || loading}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
                 Verificar Saúde do Ambiente
-              </p>
+              </button>
+              {report ? (
+                <button
+                  type="button"
+                  onClick={() => downloadReport(report.id)}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
+                >
+                  <Download className="h-5 w-5" />
+                  Exportar relatório
+                </button>
+              ) : null}
+            </div>
+          </form>
+
+          {loading || loadingHistoryRun ? (
+            <LoadingCard title="Executando troubleshooting..." subtitle="Coletando comandos e gerando análise inteligente." />
+          ) : null}
+
+          {report && !loading && !loadingHistoryRun ? (
+            <div className="space-y-6">
+              <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.3em] text-cyan-200">Resultado</p>
+                    <h2 className="mt-2 text-2xl font-black">{report.target.hostname}</h2>
+                    <p className="mt-1 text-sm text-slate-400">
+                      {report.target.gatewayIp} • {new Date(report.startedAt).toLocaleString("pt-BR")} • {report.durationMs} ms
+                    </p>
+                  </div>
+                  <StatusBadge status={report.overallStatus} />
+                </div>
+              </div>
+              <SummaryTiles report={report} />
+              <Recommendations recommendations={report.recommendations} />
+              <div className="grid gap-5">
+                {report.sections.map((section) => (
+                  <SectionCard key={section.id} section={section} />
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        <HistoryPanel history={history} onSelectRun={handleSelectRun} selectedRunId={selectedRunId} />
+      </div>
+    </Shell>
+  );
+}
+
+function LoadingCard({ title, subtitle }) {
+  return (
+    <div className="flex min-h-64 items-center justify-center rounded-[2rem] border border-white/10 bg-white/[0.06]">
+      <div className="text-center">
+        <Loader2 className="mx-auto h-10 w-10 animate-spin text-cyan-300" />
+        <p className="mt-4 font-bold text-white">{title}</p>
+        <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function RouteList({ title, routes, empty }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
+      <h3 className="font-black text-white">{title}</h3>
+      {routes.length ? (
+        <div className="mt-4 space-y-2">
+          {routes.map((route) => (
+            <pre key={route.raw} className="overflow-auto rounded-2xl bg-slate-950 p-3 text-xs leading-5 text-slate-300">
+              {route.raw}
+            </pre>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-slate-400">{empty}</p>
+      )}
+    </div>
+  );
+}
+
+function RoutingResult({ preview, confirmation, setConfirmation, applying, applyResult, onApply }) {
+  const canApply = preview.correctionPlan.canApply && confirmation === "CONFIRMAR" && preview.status === "different";
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-cyan-200">Resultado roteamento</p>
+            <h2 className="mt-2 text-2xl font-black">{preview.message}</h2>
+            <p className="mt-1 text-sm text-slate-400">Executado em {new Date(preview.startedAt).toLocaleString("pt-BR")} • {preview.durationMs} ms</p>
+          </div>
+          <StatusBadge status={preview.status} />
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className="rounded-3xl border border-emerald-400/20 bg-emerald-400/10 p-5">
+            <p className="text-xs uppercase tracking-[0.25em] text-emerald-200">Caixa ativa</p>
+            <p className="mt-2 text-xl font-black">{preview.active.target.hostname}</p>
+            <p className="text-sm text-slate-300">{preview.active.target.gatewayIp}</p>
+            <p className="mt-3 text-sm text-emerald-100">{preview.active.routeCount} rotas analisadas</p>
+          </div>
+          <div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-5">
+            <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">Caixa standby</p>
+            <p className="mt-2 text-xl font-black">{preview.standby.target.hostname}</p>
+            <p className="text-sm text-slate-300">{preview.standby.target.gatewayIp}</p>
+            <p className="mt-3 text-sm text-cyan-100">{preview.standby.routeCount} rotas analisadas</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <RouteList title="Rotas da ativa ausentes no standby" routes={preview.diff.missingOnStandby} empty="Nenhuma rota ausente no standby." />
+        <RouteList title="Rotas extras no standby" routes={preview.diff.extraOnStandby} empty="Nenhuma rota extra no standby." />
+      </div>
+
+      <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+        <div className="mb-5 flex items-center gap-2">
+          <GitCompareArrows className="h-5 w-5 text-cyan-300" />
+          <h3 className="text-xl font-black">O que será mudado antes da correção</h3>
+        </div>
+
+        {preview.correctionPlan.executableCommands.length ? (
+          <div className="space-y-3">
+            {preview.correctionPlan.executableCommands.map((item) => (
+              <div key={`${item.action}-${item.route}`} className="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
+                <p className="font-semibold text-amber-100">{item.description}</p>
+                <code className="mt-2 block overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-300">clish -c "{item.clishCommand}"</code>
+              </div>
+            ))}
+            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm text-cyan-100">
+              Após aplicar as mudanças, o backend executa <code>clish -c "save config"</code>.
             </div>
           </div>
-        </header>
+        ) : (
+          <p className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-300">
+            Nenhuma mudança automática segura foi gerada. Diferenças não parseáveis devem ser validadas manualmente.
+          </p>
+        )}
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="space-y-8">
-            <form onSubmit={handleSubmit} className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
-              <div className="mb-6 flex items-center gap-3">
-                <div className="rounded-2xl bg-cyan-300/10 p-3 text-cyan-200">
-                  <Server className="h-6 w-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black">Dados do gateway</h2>
-                  <p className="text-sm text-slate-400">Informe hostname, IP e credenciais SSH para a execução.</p>
-                </div>
-              </div>
+        {preview.correctionPlan.manualChanges.length ? (
+          <div className="mt-5 rounded-2xl border border-rose-300/20 bg-rose-300/10 p-4">
+            <p className="font-bold text-rose-100">Diferenças que exigem validação manual</p>
+            <ul className="mt-3 space-y-2 text-sm text-slate-300">
+              {preview.correctionPlan.manualChanges.map((item) => (
+                <li key={item.route}>• {item.route} — {item.reason}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Hostname">
-                  <input
-                    className={inputClassName()}
-                    placeholder="fw-gw-prod-01"
-                    value={form.hostname}
-                    onChange={(event) => updateForm("hostname", event.target.value)}
-                    required
-                  />
-                </Field>
-                <Field label="IP do gateway">
-                  <input
-                    className={inputClassName()}
-                    placeholder="10.0.0.10"
-                    value={form.gatewayIp}
-                    onChange={(event) => updateForm("gatewayIp", event.target.value)}
-                    required
-                  />
-                </Field>
-                <Field label="Porta SSH">
-                  <input
-                    className={inputClassName()}
-                    type="number"
-                    min="1"
-                    max="65535"
-                    value={form.port}
-                    onChange={(event) => updateForm("port", event.target.value)}
-                  />
-                </Field>
-                <Field label="Usuário SSH">
-                  <input
-                    className={inputClassName()}
-                    placeholder="admin"
-                    value={form.username}
-                    onChange={(event) => updateForm("username", event.target.value)}
-                    required
-                  />
-                </Field>
-                <Field label="Senha SSH" hint="Use senha ou chave privada. A senha não é armazenada no histórico.">
-                  <input
-                    className={inputClassName()}
-                    type="password"
-                    value={form.password}
-                    onChange={(event) => updateForm("password", event.target.value)}
-                    autoComplete="current-password"
-                  />
-                </Field>
-                <Field label="Passphrase da chave">
-                  <input
-                    className={inputClassName()}
-                    type="password"
-                    value={form.passphrase}
-                    onChange={(event) => updateForm("passphrase", event.target.value)}
-                    autoComplete="off"
-                  />
-                </Field>
-                <div className="md:col-span-2">
-                  <Field label="Chave privada SSH" hint="Opcional. Cole a chave PEM quando não usar senha.">
-                    <textarea
-                      className={`${inputClassName()} min-h-32 font-mono text-xs`}
-                      value={form.privateKey}
-                      onChange={(event) => updateForm("privateKey", event.target.value)}
-                      placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
-                    />
+        {preview.correctionPlan.canApply && preview.status === "different" ? (
+          <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5">
+            <Field label="Confirmação obrigatória" hint="Digite CONFIRMAR para replicar as rotas estáticas parseadas da ativa para o standby.">
+              <input className={inputClassName()} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} placeholder="CONFIRMAR" />
+            </Field>
+            <button
+              type="button"
+              disabled={!canApply || applying}
+              onClick={onApply}
+              className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-300 px-6 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {applying ? <Loader2 className="h-5 w-5 animate-spin" /> : <Route className="h-5 w-5" />}
+              Confirmar correção no standby
+            </button>
+          </div>
+        ) : null}
+
+        {applyResult ? (
+          <div className="mt-6 rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-5">
+            <p className="font-black text-emerald-100">{applyResult.message}</p>
+            <div className="mt-4 space-y-2">
+              {applyResult.commandResults.map((item) => (
+                <div key={`${item.action}-${item.clishCommand}`} className="rounded-2xl bg-black/20 p-3 text-xs text-slate-300">
+                  <p className="font-bold text-white">{item.description}</p>
+                  <p className="mt-1">Código: {item.result.code}</p>
+                  {item.result.stderr ? <p className="mt-1 text-rose-200">{item.result.stderr}</p> : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function RoutingPage({ onBack }) {
+  const [form, setForm] = useState(INITIAL_ROUTING_FORM);
+  const [preview, setPreview] = useState(null);
+  const [applyResult, setApplyResult] = useState(null);
+  const [confirmation, setConfirmation] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [error, setError] = useState("");
+
+  const canSubmit = useMemo(() => {
+    const hasFirewalls = form.firewalls.every((firewall) => firewall.hostname.trim() && firewall.gatewayIp.trim());
+    const hasAuth = form.sharedCredentials.username.trim() && (form.sharedCredentials.password || form.sharedCredentials.privateKey);
+    return hasFirewalls && hasAuth;
+  }, [form]);
+
+  function updateFirewall(index, field, value) {
+    setForm((current) => ({
+      ...current,
+      firewalls: current.firewalls.map((firewall, itemIndex) => (itemIndex === index ? { ...firewall, [field]: value } : firewall))
+    }));
+  }
+
+  function updateShared(field, value) {
+    setForm((current) => ({
+      ...current,
+      sharedCredentials: { ...current.sharedCredentials, [field]: value }
+    }));
+  }
+
+  async function handlePreview(event) {
+    event.preventDefault();
+    setError("");
+    setPreview(null);
+    setApplyResult(null);
+    setConfirmation("");
+    setLoading(true);
+
+    try {
+      setPreview(
+        await previewRouting({
+          firewalls: form.firewalls.map((firewall) => ({ ...firewall, port: Number(firewall.port || form.sharedCredentials.port || 22) })),
+          sharedCredentials: { ...form.sharedCredentials, port: Number(form.sharedCredentials.port || 22) }
+        })
+      );
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleApply() {
+    if (!preview) return;
+    setError("");
+    setApplying(true);
+
+    try {
+      setApplyResult(await applyRoutingPlan({ previewId: preview.id, confirmation }));
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  return (
+    <Shell>
+      <Header
+        onBack={onBack}
+        title="Validar roteamento das caixas"
+        description="Executa cphaprob stat para identificar active/standby, roda show route summary nos dois firewalls, mostra diferenças e pede confirmação antes de replicar rotas estáticas da ativa para o standby."
+        right={
+          <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <p className="text-sm text-slate-400">Comandos base</p>
+            <p className="mt-2 text-sm font-bold text-cyan-100">cphaprob stat</p>
+            <p className="text-sm font-bold text-cyan-100">show route summary</p>
+          </div>
+        }
+      />
+
+      <section className="space-y-8">
+        <form onSubmit={handlePreview} className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="rounded-2xl bg-cyan-300/10 p-3 text-cyan-200">
+              <Route className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black">Dados das duas caixas</h2>
+              <p className="text-sm text-slate-400">Informe os dois membros do cluster. O backend descobre qual está active e qual está standby.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            {form.firewalls.map((firewall, index) => (
+              <div key={index} className="rounded-3xl border border-white/10 bg-black/20 p-5">
+                <h3 className="mb-4 font-black text-white">Firewall {index + 1}</h3>
+                <div className="grid gap-4">
+                  <Field label="Hostname">
+                    <input className={inputClassName()} value={firewall.hostname} onChange={(event) => updateFirewall(index, "hostname", event.target.value)} required />
+                  </Field>
+                  <Field label="IP do gateway">
+                    <input className={inputClassName()} value={firewall.gatewayIp} onChange={(event) => updateFirewall(index, "gatewayIp", event.target.value)} required />
+                  </Field>
+                  <Field label="Porta SSH">
+                    <input className={inputClassName()} type="number" min="1" max="65535" value={firewall.port} onChange={(event) => updateFirewall(index, "port", event.target.value)} />
                   </Field>
                 </div>
               </div>
+            ))}
+          </div>
 
-              {error ? (
-                <div className="mt-5 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div>
-              ) : null}
-
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <button
-                  type="submit"
-                  disabled={!canSubmit || loading}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-                  Verificar Saúde do Ambiente
-                </button>
-
-                {report ? (
-                  <button
-                    type="button"
-                    onClick={() => downloadReport(report.id)}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
-                  >
-                    <Download className="h-5 w-5" />
-                    Exportar relatório
-                  </button>
-                ) : null}
+          <div className="mt-5 rounded-3xl border border-white/10 bg-black/20 p-5">
+            <h3 className="mb-4 font-black text-white">Credenciais SSH compartilhadas</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Usuário SSH">
+                <input className={inputClassName()} value={form.sharedCredentials.username} onChange={(event) => updateShared("username", event.target.value)} required />
+              </Field>
+              <Field label="Porta padrão">
+                <input className={inputClassName()} type="number" min="1" max="65535" value={form.sharedCredentials.port} onChange={(event) => updateShared("port", event.target.value)} />
+              </Field>
+              <Field label="Senha SSH">
+                <input className={inputClassName()} type="password" value={form.sharedCredentials.password} onChange={(event) => updateShared("password", event.target.value)} />
+              </Field>
+              <Field label="Passphrase da chave">
+                <input className={inputClassName()} type="password" value={form.sharedCredentials.passphrase} onChange={(event) => updateShared("passphrase", event.target.value)} />
+              </Field>
+              <div className="md:col-span-2">
+                <Field label="Chave privada SSH" hint="Opcional. Use senha ou chave privada.">
+                  <textarea className={`${inputClassName()} min-h-32 font-mono text-xs`} value={form.sharedCredentials.privateKey} onChange={(event) => updateShared("privateKey", event.target.value)} />
+                </Field>
               </div>
-            </form>
+            </div>
+          </div>
 
-            {loading || loadingHistoryRun ? (
-              <div className="flex min-h-64 items-center justify-center rounded-[2rem] border border-white/10 bg-white/[0.06]">
-                <div className="text-center">
-                  <Loader2 className="mx-auto h-10 w-10 animate-spin text-cyan-300" />
-                  <p className="mt-4 font-bold text-white">Executando troubleshooting...</p>
-                  <p className="mt-1 text-sm text-slate-400">Coletando comandos e gerando análise inteligente.</p>
-                </div>
-              </div>
-            ) : null}
+          {error ? <div className="mt-5 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div> : null}
 
-            {report && !loading && !loadingHistoryRun ? (
-              <div className="space-y-6">
-                <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm uppercase tracking-[0.3em] text-cyan-200">Resultado</p>
-                      <h2 className="mt-2 text-2xl font-black">{report.target.hostname}</h2>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {report.target.gatewayIp} • {new Date(report.startedAt).toLocaleString("pt-BR")} • {report.durationMs} ms
-                      </p>
-                    </div>
-                    <StatusBadge status={report.overallStatus} />
-                  </div>
-                </div>
+          <button
+            type="submit"
+            disabled={!canSubmit || loading}
+            className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <GitCompareArrows className="h-5 w-5" />}
+            Validar Roteamento das Caixas
+          </button>
+        </form>
 
-                <SummaryTiles report={report} />
-                <Recommendations recommendations={report.recommendations} />
+        {loading ? <LoadingCard title="Validando roteamento..." subtitle="Identificando active/standby, coletando rotas e calculando diferenças." /> : null}
 
-                <div className="grid gap-5">
-                  {report.sections.map((section) => (
-                    <SectionCard key={section.id} section={section} />
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </section>
-
-          <HistoryPanel history={history} onSelectRun={handleSelectRun} selectedRunId={selectedRunId} />
-        </div>
-      </div>
-    </main>
+        {preview && !loading ? (
+          <RoutingResult
+            preview={preview}
+            confirmation={confirmation}
+            setConfirmation={setConfirmation}
+            applying={applying}
+            applyResult={applyResult}
+            onApply={handleApply}
+          />
+        ) : null}
+      </section>
+    </Shell>
   );
+}
+
+function App() {
+  const [view, setView] = useState("home");
+
+  if (view === "health") {
+    return <HealthPage onBack={() => setView("home")} />;
+  }
+
+  if (view === "routing") {
+    return <RoutingPage onBack={() => setView("home")} />;
+  }
+
+  return <HomePage onOpenHealth={() => setView("health")} onOpenRouting={() => setView("routing")} />;
 }
 
 export default App;

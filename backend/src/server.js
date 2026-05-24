@@ -8,12 +8,15 @@ import { CHECKPOINT_COMMANDS } from "./checkpointCommands.js";
 import { getRunById, readHistory, saveRun } from "./historyStore.js";
 import { parseCheckpointResults } from "./parsers.js";
 import { formatMarkdownReport } from "./reportFormatter.js";
+import { applyRoutingPlan, createRoutingPreview } from "./routingValidator.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
 const historyLimit = Number(process.env.HISTORY_LIMIT ?? 25);
 const sshConnectTimeoutMs = Number(process.env.SSH_CONNECT_TIMEOUT_MS ?? 15000);
 const sshCommandTimeoutMs = Number(process.env.SSH_COMMAND_TIMEOUT_MS ?? 30000);
+const routingPlanTtlMs = Number(process.env.ROUTING_PLAN_TTL_MS ?? 10 * 60 * 1000);
+const routeSummaryCommand = process.env.ROUTING_SUMMARY_COMMAND;
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
@@ -32,6 +35,41 @@ const healthCheckSchema = z
     message: "Informe senha SSH ou chave privada.",
     path: ["password"]
   });
+
+const sharedRoutingCredentialsSchema = z
+  .object({
+    port: z.coerce.number().int().min(1).max(65535).default(22),
+    username: z.string().trim().min(1, "Informe o usuário SSH."),
+    password: z.string().optional(),
+    privateKey: z.string().optional(),
+    passphrase: z.string().optional()
+  })
+  .refine((value) => Boolean(value.password || value.privateKey), {
+    message: "Informe senha SSH ou chave privada.",
+    path: ["password"]
+  });
+
+const routingFirewallSchema = z.object({
+  hostname: z.string().trim().min(1, "Informe o hostname."),
+  gatewayIp: z.string().trim().min(1, "Informe o IP do gateway."),
+  port: z.coerce.number().int().min(1).max(65535).optional(),
+  username: z.string().trim().optional(),
+  password: z.string().optional(),
+  privateKey: z.string().optional(),
+  passphrase: z.string().optional()
+});
+
+const routingPreviewSchema = z.object({
+  sharedCredentials: sharedRoutingCredentialsSchema,
+  firewalls: z.array(routingFirewallSchema).length(2, "Informe exatamente duas caixas do cluster.")
+});
+
+const routingApplySchema = z.object({
+  previewId: z.string().trim().min(1, "Informe o previewId."),
+  confirmation: z.literal("CONFIRMAR", {
+    errorMap: () => ({ message: "Digite CONFIRMAR para aplicar a correção." })
+  })
+});
 
 function publicRun(run) {
   return {
@@ -203,6 +241,48 @@ app.post("/api/health-check", async (req, res, next) => {
 
     await saveRun(run, historyLimit);
     return res.json(publicRun(run));
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post("/api/routing/preview", async (req, res, next) => {
+  const parsed = routingPreviewSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: "Dados inválidos.",
+      details: parsed.error.flatten()
+    });
+  }
+
+  try {
+    const preview = await createRoutingPreview(parsed.data, {
+      connectTimeoutMs: sshConnectTimeoutMs,
+      commandTimeoutMs: sshCommandTimeoutMs,
+      routeSummaryCommand
+    });
+    return res.json(preview);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post("/api/routing/apply", async (req, res, next) => {
+  const parsed = routingApplySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: "Confirmação inválida.",
+      details: parsed.error.flatten()
+    });
+  }
+
+  try {
+    const result = await applyRoutingPlan(parsed.data.previewId, {
+      connectTimeoutMs: sshConnectTimeoutMs,
+      commandTimeoutMs: sshCommandTimeoutMs,
+      planTtlMs: routingPlanTtlMs
+    });
+    return res.json(result);
   } catch (error) {
     return next(error);
   }
