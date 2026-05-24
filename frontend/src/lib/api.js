@@ -53,6 +53,22 @@ export async function applyRoutingPlan(payload) {
   return parseResponse(response);
 }
 
+export async function generateTacPackage(payload) {
+  const response = await fetch("/api/tac-package", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  return parseResponse(response);
+}
+
+export function downloadTacPackage(id) {
+  window.open(`/api/tac-package/${id}/download`, "_blank", "noopener,noreferrer");
+}
+
 export function downloadReport(id) {
   window.open(`/api/reports/${id}/export`, "_blank", "noopener,noreferrer");
 }

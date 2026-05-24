@@ -34,6 +34,13 @@ Dashboard full-stack para executar troubleshooting de firewalls Check Point via 
   - Mostra diferenças e o plano do que será alterado.
   - Pede confirmação antes de aplicar correção.
   - Replica automaticamente apenas rotas estáticas parseáveis da ativa para o standby.
+- Botão **Gerar Pacote TAC**:
+  - Executa `cpinfo`.
+  - Executa `cpview export`.
+  - Coleta logs.
+  - Coleta dumps.
+  - Compacta o conteúdo em `.tar.gz`.
+  - Disponibiliza download do pacote pelo NetGuardian.
 
 ## Stack
 
@@ -64,6 +71,11 @@ SSH_COMMAND_TIMEOUT_MS=30000
 HISTORY_LIMIT=25
 ROUTING_PLAN_TTL_MS=600000
 ROUTING_SUMMARY_COMMAND=clish -c "show route summary"
+TAC_COMMAND_TIMEOUT_MS=600000
+TAC_DOWNLOAD_TIMEOUT_MS=600000
+TAC_REMOTE_BASE_DIR=/var/log
+TAC_LOG_PATHS=/var/log/messages* /var/log/secure* /var/log/audit* /var/log/dmesg*
+TAC_DUMP_PATHS=/var/log/dump /var/log/dump/usermode
 ```
 
 ## Comandos executados no firewall
@@ -109,8 +121,26 @@ O segundo botão usa duas etapas para evitar mudanças automáticas sem revisão
 
 Diferenças que não forem parseáveis como rota estática aparecem no output como validação manual, sem execução automática.
 
+## Fluxo de geração de pacote TAC
+
+O terceiro botão cria um pacote de evidências para abertura de chamado TAC:
+
+1. Conecta no gateway via SSH.
+2. Cria um diretório temporário em `TAC_REMOTE_BASE_DIR`.
+3. Executa `cpinfo`.
+4. Executa `cpview export`.
+5. Coleta logs configurados em `TAC_LOG_PATHS`.
+6. Coleta dumps configurados em `TAC_DUMP_PATHS`.
+7. Gera um manifesto simples com data, hostname e lista de arquivos.
+8. Compacta tudo em `.tar.gz` no firewall.
+9. Baixa o `.tar.gz` para o backend.
+10. Remove os temporários remotos.
+
+Os arquivos baixados ficam em `backend/data/tac-packages/`, que é ignorado pelo Git.
+
 ## Observações de segurança
 
 - Senhas e chaves privadas são usadas apenas para abrir a sessão SSH da execução atual.
 - O histórico armazena alvo, métricas, recomendações e saídas dos comandos, mas não armazena senha nem chave privada.
+- Pacotes TAC podem conter dados sensíveis de configuração, logs, IPs, nomes de objetos e dumps. Compartilhe apenas por canais aprovados.
 - Garanta que o usuário SSH tenha permissões suficientes para executar os comandos Check Point necessários.

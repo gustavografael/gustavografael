@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  Archive,
   ArrowLeft,
   CheckCircle2,
   Clock3,
@@ -16,7 +17,16 @@ import {
   TerminalSquare,
   XCircle
 } from "lucide-react";
-import { applyRoutingPlan, downloadReport, fetchHistory, fetchRun, previewRouting, runHealthCheck } from "./lib/api";
+import {
+  applyRoutingPlan,
+  downloadReport,
+  downloadTacPackage,
+  fetchHistory,
+  fetchRun,
+  generateTacPackage,
+  previewRouting,
+  runHealthCheck
+} from "./lib/api";
 
 const STATUS_META = {
   healthy: {
@@ -77,6 +87,16 @@ const INITIAL_ROUTING_FORM = {
     privateKey: "",
     passphrase: ""
   }
+};
+
+const INITIAL_TAC_FORM = {
+  hostname: "",
+  gatewayIp: "",
+  port: 22,
+  username: "",
+  password: "",
+  privateKey: "",
+  passphrase: ""
 };
 
 function statusLabel(status) {
@@ -148,7 +168,7 @@ function Header({ eyebrow = "Firewall Check Point", title, description, right, o
   );
 }
 
-function HomePage({ onOpenHealth, onOpenRouting }) {
+function HomePage({ onOpenHealth, onOpenRouting, onOpenTac }) {
   const actions = [
     {
       title: "Avaliar saúde firewall",
@@ -163,6 +183,13 @@ function HomePage({ onOpenHealth, onOpenRouting }) {
       icon: Route,
       action: onOpenRouting,
       cta: "Validar Roteamento das Caixas"
+    },
+    {
+      title: "Gerar Pacote TAC",
+      description: "Coleta cpinfo, cpview export, logs e dumps no gateway, compacta em tar.gz e disponibiliza o download para abertura de chamado TAC.",
+      icon: Archive,
+      action: onOpenTac,
+      cta: "Gerar Pacote TAC"
     }
   ];
 
@@ -174,12 +201,12 @@ function HomePage({ onOpenHealth, onOpenRouting }) {
         right={
           <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
             <p className="text-sm text-slate-400">Botões disponíveis</p>
-            <p className="mt-2 text-3xl font-black text-cyan-100">2</p>
+            <p className="mt-2 text-3xl font-black text-cyan-100">3</p>
           </div>
         }
       />
 
-      <section className="grid gap-6 md:grid-cols-2">
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {actions.map((item) => {
           const Icon = item.icon;
           return (
@@ -814,6 +841,171 @@ function RoutingPage({ onBack }) {
   );
 }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes)) {
+    return "N/D";
+  }
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+function TacPackagePage({ onBack }) {
+  const [form, setForm] = useState(INITIAL_TAC_FORM);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const canSubmit = useMemo(
+    () => form.hostname.trim() && form.gatewayIp.trim() && form.username.trim() && (form.password || form.privateKey),
+    [form]
+  );
+
+  function updateForm(field, value) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setError("");
+    setResult(null);
+    setLoading(true);
+
+    try {
+      setResult(await generateTacPackage({ ...form, port: Number(form.port) || 22 }));
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Shell>
+      <Header
+        onBack={onBack}
+        title="Gerar Pacote TAC"
+        description="Executa cpinfo, cpview export, coleta logs e dumps no firewall, compacta tudo em tar.gz e disponibiliza o download pelo NetGuardian."
+        right={
+          <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
+            <p className="text-sm text-slate-400">Coletas</p>
+            <p className="mt-2 text-sm font-bold text-cyan-100">cpinfo</p>
+            <p className="text-sm font-bold text-cyan-100">cpview export</p>
+            <p className="text-sm font-bold text-cyan-100">logs + dumps + tar.gz</p>
+          </div>
+        }
+      />
+
+      <section className="space-y-8">
+        <form onSubmit={handleSubmit} className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="rounded-2xl bg-cyan-300/10 p-3 text-cyan-200">
+              <Archive className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black">Dados do gateway</h2>
+              <p className="text-sm text-slate-400">Use credenciais com permissão para executar cpinfo, cpview export e ler logs/dumps.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Hostname">
+              <input className={inputClassName()} value={form.hostname} onChange={(event) => updateForm("hostname", event.target.value)} required />
+            </Field>
+            <Field label="IP do gateway">
+              <input className={inputClassName()} value={form.gatewayIp} onChange={(event) => updateForm("gatewayIp", event.target.value)} required />
+            </Field>
+            <Field label="Porta SSH">
+              <input className={inputClassName()} type="number" min="1" max="65535" value={form.port} onChange={(event) => updateForm("port", event.target.value)} />
+            </Field>
+            <Field label="Usuário SSH">
+              <input className={inputClassName()} value={form.username} onChange={(event) => updateForm("username", event.target.value)} required />
+            </Field>
+            <Field label="Senha SSH" hint="Use senha ou chave privada. Credenciais não entram no pacote nem no histórico.">
+              <input className={inputClassName()} type="password" value={form.password} onChange={(event) => updateForm("password", event.target.value)} />
+            </Field>
+            <Field label="Passphrase da chave">
+              <input className={inputClassName()} type="password" value={form.passphrase} onChange={(event) => updateForm("passphrase", event.target.value)} />
+            </Field>
+            <div className="md:col-span-2">
+              <Field label="Chave privada SSH" hint="Opcional. Cole a chave PEM quando não usar senha.">
+                <textarea className={`${inputClassName()} min-h-32 font-mono text-xs`} value={form.privateKey} onChange={(event) => updateForm("privateKey", event.target.value)} />
+              </Field>
+            </div>
+          </div>
+
+          {error ? <div className="mt-5 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div> : null}
+
+          <button
+            type="submit"
+            disabled={!canSubmit || loading}
+            className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Archive className="h-5 w-5" />}
+            Gerar Pacote TAC
+          </button>
+        </form>
+
+        {loading ? <LoadingCard title="Gerando pacote TAC..." subtitle="Executando coletas, compactando tar.gz e baixando o arquivo para o NetGuardian." /> : null}
+
+        {result && !loading ? (
+          <div className="space-y-6">
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.3em] text-cyan-200">Pacote TAC</p>
+                  <h2 className="mt-2 text-2xl font-black">{result.message}</h2>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {result.target.hostname} • {result.target.gatewayIp} • {formatBytes(result.sizeBytes)} • {result.durationMs} ms
+                  </p>
+                </div>
+                <StatusBadge status={result.status === "ready" ? "healthy" : result.status === "warning" ? "warning" : "critical"} />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => downloadTacPackage(result.id)}
+                className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-300 px-6 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-200"
+              >
+                <Download className="h-5 w-5" />
+                Baixar {result.fileName}
+              </button>
+            </div>
+
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
+              <div className="mb-5 flex items-center gap-2">
+                <TerminalSquare className="h-5 w-5 text-cyan-300" />
+                <h3 className="text-xl font-black">Etapas executadas</h3>
+              </div>
+              <div className="space-y-3">
+                {result.steps.map((step) => (
+                  <details key={`${step.label}-${step.startedAt}`} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <summary className="flex cursor-pointer items-center justify-between gap-3 text-sm font-semibold text-slate-200">
+                      <span>{step.label}</span>
+                      <StatusBadge status={step.ok ? "healthy" : "warning"} />
+                    </summary>
+                    <code className="mt-3 block overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-300">{step.command}</code>
+                    {step.stdout ? <pre className="mt-3 max-h-48 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-300">{step.stdout}</pre> : null}
+                    {step.stderr ? <pre className="mt-3 max-h-48 overflow-auto rounded-xl bg-rose-950/40 p-3 text-xs text-rose-100">{step.stderr}</pre> : null}
+                  </details>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+    </Shell>
+  );
+}
+
 function App() {
   const [view, setView] = useState("home");
 
@@ -825,7 +1017,11 @@ function App() {
     return <RoutingPage onBack={() => setView("home")} />;
   }
 
-  return <HomePage onOpenHealth={() => setView("health")} onOpenRouting={() => setView("routing")} />;
+  if (view === "tac") {
+    return <TacPackagePage onBack={() => setView("home")} />;
+  }
+
+  return <HomePage onOpenHealth={() => setView("health")} onOpenRouting={() => setView("routing")} onOpenTac={() => setView("tac")} />;
 }
 
 export default App;
