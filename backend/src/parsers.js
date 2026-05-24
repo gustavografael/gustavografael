@@ -1,3 +1,5 @@
+import { attachKnownIssue } from "./checkpointKnowledgeBase.js";
+
 const SECTION_DEFINITIONS = {
   cpu: "CPU",
   memory: "Memória",
@@ -329,80 +331,101 @@ function buildIntelligentDiagnostics(resultsByCommand) {
 
   if (hasDrops && cpuHigh) {
     diagnostics.push(
-      diagnostic({
-        id: "rx-drops-cpu-saturation",
-        title: "Possível saturação do gateway",
-        severity: cpuCritical || (signals.worstInterface?.totalIssues ?? 0) > 100 ? "critical" : "warning",
-        summary: "RX/TX drops ou errors aparecem junto com CPU alta.",
-        evidence: [
-          `CPU estimada: ${signals.cpuUsage.toFixed(1)}%`,
-          `Interface mais afetada: ${signals.worstInterface.iface} (${signals.worstInterface.totalIssues} drops/errors)`,
-          `${signals.interfacesWithDrops.length} interface(s) com drops/errors`
-        ],
-        interpretation: "Quando drops de interface coincidem com CPU alta, o firewall pode estar saturado e descartando pacotes por pressão de processamento ou fila.",
-        recommendation: "Validar throughput por interface, top talkers, política de inspeção, CoreXL/SecureXL e capacidade do appliance."
-      })
+      attachKnownIssue(
+        diagnostic({
+          id: "rx-drops-cpu-saturation",
+          title: "Possível saturação do gateway",
+          severity: cpuCritical || (signals.worstInterface?.totalIssues ?? 0) > 100 ? "critical" : "warning",
+          summary: "RX/TX drops ou errors aparecem junto com CPU alta.",
+          evidence: [
+            `CPU estimada: ${signals.cpuUsage.toFixed(1)}%`,
+            `Interface mais afetada: ${signals.worstInterface.iface} (${signals.worstInterface.totalIssues} drops/errors)`,
+            `${signals.interfacesWithDrops.length} interface(s) com drops/errors`
+          ],
+          interpretation:
+            "Quando drops de interface coincidem com CPU alta, o firewall pode estar saturado e descartando pacotes por pressão de processamento, fila, ring buffer ou SND.",
+          recommendation:
+            "Validar throughput por interface, top talkers, sar -n EDEV, ethtool -S, Multi-Queue, CoreXL/SecureXL e capacidade do appliance."
+        }),
+        "loadBasedRxDrops"
+      )
     );
   }
 
   if (signals.secureXlDisabled && throughputHigh) {
     diagnostics.push(
-      diagnostic({
-        id: "securexl-off-throughput",
-        title: "Gargalo por processamento em software",
-        severity: signals.throughputMbps !== null && signals.throughputMbps >= 1000 ? "critical" : "warning",
-        summary: "SecureXL está OFF/inativo enquanto há indício de tráfego alto.",
-        evidence: [
-          "SecureXL: OFF/inativo",
-          signals.throughputMbps !== null
-            ? `Throughput detectado: ${signals.throughputMbps.toFixed(1)} Mbps`
-            : `Conexões reportadas: ${(signals.connections ?? 0).toLocaleString("pt-BR")}`
-        ],
-        interpretation: "Sem aceleração SecureXL, mais tráfego passa pelo caminho lento de software, aumentando risco de gargalo de CPU.",
-        recommendation: "Verificar motivo do SecureXL estar desabilitado, templates/acceleration, blades que impedem aceleração e impacto de regras."
-      })
+      attachKnownIssue(
+        diagnostic({
+          id: "securexl-off-throughput",
+          title: "Gargalo por processamento em software",
+          severity: signals.throughputMbps !== null && signals.throughputMbps >= 1000 ? "critical" : "warning",
+          summary: "SecureXL está OFF/inativo enquanto há indício de tráfego alto.",
+          evidence: [
+            "SecureXL: OFF/inativo",
+            signals.throughputMbps !== null
+              ? `Throughput detectado: ${signals.throughputMbps.toFixed(1)} Mbps`
+              : `Conexões reportadas: ${(signals.connections ?? 0).toLocaleString("pt-BR")}`
+          ],
+          interpretation:
+            "Sem aceleração SecureXL, mais tráfego pode passar pelo caminho de software/slow path, aumentando risco de gargalo de CPU.",
+          recommendation:
+            "Verificar motivo do SecureXL estar desabilitado, templates/acceleration, blades que impedem aceleração e impacto de regras."
+        }),
+        "secureXlSoftwarePath"
+      )
     );
   }
 
   if (signals.coreXlImbalancePct !== null && signals.coreXlImbalancePct > 80) {
     diagnostics.push(
-      diagnostic({
-        id: "corexl-worker-imbalance",
-        title: "CoreXL imbalance",
-        severity: "warning",
-        summary: "Workers CoreXL aparentam estar desbalanceados.",
-        evidence: [`Desbalanceamento estimado: ${signals.coreXlImbalancePct.toFixed(1)}%`],
-        interpretation: "Um ou poucos workers podem estar recebendo carga desproporcional, causando latência ou CPU alta mesmo com cores livres.",
-        recommendation: "Validar elephant flows, afinidade, distribuição de SND/worker, SecureXL templates e balanceamento de interfaces."
-      })
+      attachKnownIssue(
+        diagnostic({
+          id: "corexl-worker-imbalance",
+          title: "CoreXL imbalance",
+          severity: "warning",
+          summary: "Workers CoreXL aparentam estar desbalanceados.",
+          evidence: [`Desbalanceamento estimado: ${signals.coreXlImbalancePct.toFixed(1)}%`],
+          interpretation:
+            "Um ou poucos workers/SNDs podem estar recebendo carga desproporcional, causando latência ou CPU alta mesmo com cores livres.",
+          recommendation:
+            "Validar elephant flows, afinidade, distribuição de SND/worker, SecureXL templates, Multi-Queue e balanceamento de interfaces."
+        }),
+        "coreXlMultiQueueImbalance"
+      )
     );
   }
 
   if (signals.maxDisk && signals.maxDisk.usagePct >= 85) {
     diagnostics.push(
-      diagnostic({
-        id: "disk-logging-performance",
-        title: "Risco de impacto em logging/performance",
-        severity: signals.maxDisk.usagePct >= 90 ? "critical" : "warning",
-        summary: "Filesystem com uso elevado pode afetar logs, dumps e processos do gateway.",
-        evidence: [`${signals.maxDisk.mount}: ${signals.maxDisk.usagePct}% usado`, `Filesystem: ${signals.maxDisk.filesystem}`],
-        interpretation: "Disco cheio tende a impactar escrita de logs, geração de dumps, upgrades e estabilidade de serviços.",
-        recommendation: "Limpar/rotacionar logs, mover pacotes antigos, validar retenção e aumentar capacidade quando necessário."
-      })
+      attachKnownIssue(
+        diagnostic({
+          id: "disk-logging-performance",
+          title: "Risco de impacto em logging/performance",
+          severity: signals.maxDisk.usagePct >= 90 ? "critical" : "warning",
+          summary: "Filesystem com uso elevado pode afetar logs, dumps e processos do gateway.",
+          evidence: [`${signals.maxDisk.mount}: ${signals.maxDisk.usagePct}% usado`, `Filesystem: ${signals.maxDisk.filesystem}`],
+          interpretation: "Disco cheio tende a impactar escrita de logs, geração de dumps, upgrades, cpinfo e estabilidade de serviços.",
+          recommendation: "Limpar/rotacionar logs, mover pacotes antigos, validar retenção e aumentar capacidade quando necessário."
+        }),
+        "diskLoggingPressure"
+      )
     );
   }
 
   if (signals.tableSaturation) {
     diagnostics.push(
-      diagnostic({
-        id: "connections-table-pressure",
-        title: "Pressão na tabela de conexões",
-        severity: "critical",
-        summary: "fw ctl pstat indica possível saturação, drops ou falhas de alocação.",
-        evidence: ["Sinais de saturação encontrados em fw ctl pstat"],
-        interpretation: "Falhas na tabela de conexões podem causar queda de sessões novas ou comportamento intermitente.",
-        recommendation: "Validar limites de tabela, taxa de novas conexões, timeouts, possíveis ataques ou varreduras e sizing do gateway."
-      })
+      attachKnownIssue(
+        diagnostic({
+          id: "connections-table-pressure",
+          title: "Pressão na tabela de conexões",
+          severity: "critical",
+          summary: "fw ctl pstat indica possível saturação, drops ou falhas de alocação.",
+          evidence: ["Sinais de saturação encontrados em fw ctl pstat"],
+          interpretation: "Falhas na tabela de conexões podem causar queda de sessões novas ou comportamento intermitente.",
+          recommendation: "Validar limites de tabela, taxa de novas conexões, timeouts, possíveis ataques ou varreduras e sizing do gateway."
+        }),
+        "connectionTablePressure"
+      )
     );
   }
 

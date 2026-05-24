@@ -336,6 +336,52 @@ function IntelligentDiagnostics({ diagnostics }) {
                 </div>
               ) : null}
 
+              {item.knownIssue ? (
+                <details className="mt-4 rounded-2xl border border-[#EE0C5D]/20 bg-black/20 p-4">
+                  <summary className="cursor-pointer text-sm font-bold text-[#FFD6E5]">
+                    Base Check Point / CheckMates: {item.knownIssue.title}
+                  </summary>
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Padrão conhecido</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-200">{item.knownIssue.pattern}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Contexto técnico</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-200">{item.knownIssue.interpretation}</p>
+                    </div>
+                    {item.knownIssue.nextChecks?.length ? (
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Próximas validações</p>
+                        <ul className="mt-2 space-y-2 text-sm text-slate-200">
+                          {item.knownIssue.nextChecks.map((check) => (
+                            <li key={check}>• {check}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {item.knownIssue.references?.length ? (
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Referências</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {item.knownIssue.references.map((reference) => (
+                            <a
+                              key={reference.url}
+                              href={reference.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:border-[#EE0C5D]/50 hover:bg-[#EE0C5D]/10"
+                            >
+                              {reference.label}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </details>
+              ) : null}
+
               <p className="mt-4 text-xs text-slate-500">Confiança: {item.confidence}</p>
             </article>
           );

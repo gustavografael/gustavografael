@@ -37,6 +37,18 @@ export function formatMarkdownReport(run) {
         lines.push("- **Evidências:**");
         item.evidence.forEach((evidence) => lines.push(`  - ${evidence}`));
       }
+      if (item.knownIssue) {
+        lines.push(`- **Base de conhecimento:** ${item.knownIssue.title}`);
+        lines.push(`  - ${item.knownIssue.pattern}`);
+        if (item.knownIssue.nextChecks?.length) {
+          lines.push("  - Próximas validações:");
+          item.knownIssue.nextChecks.forEach((check) => lines.push(`    - ${check}`));
+        }
+        if (item.knownIssue.references?.length) {
+          lines.push("  - Referências:");
+          item.knownIssue.references.forEach((reference) => lines.push(`    - [${reference.label}](${reference.url})`));
+        }
+      }
       lines.push("");
     });
   }
