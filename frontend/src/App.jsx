@@ -339,9 +339,15 @@ function IntelligentDiagnostics({ diagnostics }) {
               {item.knownIssue ? (
                 <details className="mt-4 rounded-2xl border border-[#EE0C5D]/20 bg-black/20 p-4">
                   <summary className="cursor-pointer text-sm font-bold text-[#FFD6E5]">
-                    Base Check Point / CheckMates: {item.knownIssue.title}
+                    Referência acionada pelo output: {item.knownIssue.title}
                   </summary>
                   <div className="mt-4 space-y-4">
+                    {item.knownIssue.trigger ? (
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Por que apareceu</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-200">{item.knownIssue.trigger}</p>
+                      </div>
+                    ) : null}
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Padrão conhecido</p>
                       <p className="mt-2 text-sm leading-6 text-slate-200">{item.knownIssue.pattern}</p>

@@ -1,4 +1,4 @@
-import { attachKnownIssue } from "./checkpointKnowledgeBase.js";
+import { attachKnownIssue, knownIssueIdForProcess } from "./checkpointKnowledgeBase.js";
 
 const SECTION_DEFINITIONS = {
   cpu: "CPU",
@@ -88,6 +88,35 @@ function parseTopCpu(topOutput) {
   }
 
   return usedMatches.reduce((sum, match) => sum + Number(match[1].replace(",", ".")), 0);
+}
+
+function parseTopProcesses(topOutput) {
+  const lines = topOutput.split(/\r?\n/);
+  const headerIndex = lines.findIndex((line) => /\bPID\b/i.test(line) && /\bCOMMAND\b/i.test(line));
+  const headerParts = headerIndex >= 0 ? lines[headerIndex].trim().split(/\s+/) : [];
+  const cpuIndex = headerParts.findIndex((part) => /^%?CPU$/i.test(part));
+  const memIndex = headerParts.findIndex((part) => /^%?MEM$/i.test(part));
+  const commandIndex = headerParts.findIndex((part) => /^COMMAND$/i.test(part));
+
+  return lines
+    .slice(headerIndex >= 0 ? headerIndex + 1 : 0)
+    .map((line) => line.trim())
+    .filter((line) => /^\d+\s+/.test(line))
+    .map((line) => {
+      const parts = line.split(/\s+/);
+      const cpu = Number(parts[cpuIndex >= 0 ? cpuIndex : 8]?.replace(",", "."));
+      const memory = Number(parts[memIndex >= 0 ? memIndex : 9]?.replace(",", "."));
+      const command = commandIndex >= 0 ? parts.slice(commandIndex).join(" ") : parts.slice(11).join(" ");
+
+      return {
+        pid: parts[0],
+        cpu: Number.isFinite(cpu) ? cpu : 0,
+        memory: Number.isFinite(memory) ? memory : 0,
+        command: command || parts.at(-1) || "N/D"
+      };
+    })
+    .filter((item) => item.command && item.cpu > 0)
+    .sort((a, b) => b.cpu - a.cpu);
 }
 
 function parseMpstat(mpstatOutput) {
@@ -290,6 +319,8 @@ function buildHealthSignals(resultsByCommand) {
 
   const mpstat = parseMpstat(mpstatOutput);
   const cpuUsage = mpstat.avgUsage ?? parseTopCpu(topOutput);
+  const topProcesses = parseTopProcesses(topOutput);
+  const topCpuProcess = topProcesses[0] ?? null;
   const interfaceRows = [...parseNetstatErrors(netstatOutput), ...parseIfconfigErrors(ifconfigOutput)];
   const interfacesWithDrops = interfaceRows
     .map((item) => ({
@@ -310,6 +341,8 @@ function buildHealthSignals(resultsByCommand) {
 
   return {
     cpuUsage,
+    topCpuProcess,
+    topProcesses,
     interfacesWithDrops,
     worstInterface,
     secureXlDisabled,
@@ -328,6 +361,33 @@ function buildIntelligentDiagnostics(resultsByCommand) {
   const cpuCritical = signals.cpuUsage !== null && signals.cpuUsage >= 90;
   const hasDrops = signals.interfacesWithDrops.length > 0;
   const throughputHigh = signals.throughputMbps !== null ? signals.throughputMbps >= 500 : (signals.connections ?? 0) >= 100000;
+  const topProcessIssueId = signals.topCpuProcess?.cpu >= 40 ? knownIssueIdForProcess(signals.topCpuProcess.command) : null;
+
+  if (signals.topCpuProcess?.cpu >= 40) {
+    const processDiagnostic = diagnostic({
+      id: `high-cpu-process-${signals.topCpuProcess.command.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "unknown"}`,
+      title: `CPU alta concentrada no processo ${signals.topCpuProcess.command}`,
+      severity: signals.topCpuProcess.cpu >= 80 ? "critical" : "warning",
+      summary: `O processo ${signals.topCpuProcess.command} aparece no topo consumindo ${signals.topCpuProcess.cpu.toFixed(1)}% de CPU.`,
+      evidence: [
+        `PID: ${signals.topCpuProcess.pid}`,
+        `Processo: ${signals.topCpuProcess.command}`,
+        `CPU do processo: ${signals.topCpuProcess.cpu.toFixed(1)}%`,
+        signals.cpuUsage !== null ? `CPU total estimada: ${signals.cpuUsage.toFixed(1)}%` : "CPU total estimada: N/D"
+      ],
+      interpretation:
+        topProcessIssueId
+          ? "O processo identificado bate com um padrão específico salvo na base de referências. A análise deve validar versão, Jumbo Hotfix e sintomas relacionados antes de concluir causa raiz."
+          : "A CPU alta parece estar concentrada em um processo específico, mas não há regra de SK/CheckMates salva para esse processo.",
+      recommendation:
+        topProcessIssueId
+          ? "Validar a referência acionada, versão/hotfix e persistência do consumo com top -H/ps antes de aplicar qualquer ação."
+          : "Coletar top -H, ps por core, cpinfo e logs no mesmo horário para investigação ou abertura de TAC.",
+      confidence: topProcessIssueId ? "média" : "baixa"
+    });
+
+    diagnostics.push(topProcessIssueId ? attachKnownIssue(processDiagnostic, topProcessIssueId) : processDiagnostic);
+  }
 
   if (hasDrops && cpuHigh) {
     diagnostics.push(
@@ -452,6 +512,7 @@ export function parseCheckpointResults(resultsByCommand) {
       const topUsage = parseTopCpu(outputs.top);
       const mpstat = parseMpstat(outputs.mpstat);
       const cpuUsage = mpstat.avgUsage ?? topUsage;
+      const topProcess = parseTopProcesses(outputs.top)[0] ?? null;
       const status = cpuUsage === null ? "unknown" : cpuUsage >= 90 ? "critical" : cpuUsage >= 75 ? "warning" : "healthy";
       const recommendations = [];
 
@@ -466,7 +527,8 @@ export function parseCheckpointResults(resultsByCommand) {
         summary: cpuUsage === null ? "Não foi possível calcular o uso de CPU." : `Uso médio estimado em ${cpuUsage.toFixed(1)}%.`,
         metrics: [
           cpuUsage === null ? metric("Uso de CPU", "N/D", "unknown") : metric("Uso de CPU", `${cpuUsage.toFixed(1)}%`, status),
-          metric("Cores detectados", mpstat.coreCount || "N/D", "healthy")
+          metric("Cores detectados", mpstat.coreCount || "N/D", "healthy"),
+          metric("Top processo", topProcess ? `${topProcess.command} (${topProcess.cpu.toFixed(1)}%)` : "N/D", topProcess?.cpu >= 40 ? "warning" : "healthy")
         ],
         recommendations
       };

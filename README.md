@@ -57,7 +57,7 @@ Dashboard full-stack para executar troubleshooting de firewalls Check Point via 
 
 A referência oficial de APIs Check Point informada para futuras integrações foi registrada em [`docs/checkpoint-api-reference.md`](docs/checkpoint-api-reference.md).
 
-A base local de problemas conhecidos usada pelo **Diagnóstico Inteligente** foi registrada em [`docs/checkpoint-known-issues.md`](docs/checkpoint-known-issues.md).
+As regras acionadas de problemas conhecidos usadas pelo **Diagnóstico Inteligente** foram registradas em [`docs/checkpoint-known-issues.md`](docs/checkpoint-known-issues.md). Elas só aparecem no output quando o sintoma correspondente é identificado nos comandos coletados.
 
 ## Como executar
 

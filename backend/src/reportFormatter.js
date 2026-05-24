@@ -38,7 +38,10 @@ export function formatMarkdownReport(run) {
         item.evidence.forEach((evidence) => lines.push(`  - ${evidence}`));
       }
       if (item.knownIssue) {
-        lines.push(`- **Base de conhecimento:** ${item.knownIssue.title}`);
+        lines.push(`- **Referência acionada pelo output:** ${item.knownIssue.title}`);
+        if (item.knownIssue.trigger) {
+          lines.push(`  - Motivo: ${item.knownIssue.trigger}`);
+        }
         lines.push(`  - ${item.knownIssue.pattern}`);
         if (item.knownIssue.nextChecks?.length) {
           lines.push("  - Próximas validações:");

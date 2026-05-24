@@ -1,6 +1,116 @@
 const CHECKPOINT_KNOWLEDGE_BASE = {
+  highCpuMonitord: {
+    title: "CPU alta causada por monitord/confd",
+    trigger: "Acionado somente quando o output do top mostra monitord ou confd consumindo CPU alta.",
+    pattern:
+      "Check Point possui SKs públicos que relacionam monitord/confd ou monitord em versões específicas a consumo elevado de CPU.",
+    interpretation:
+      "Se o processo monitord aparece no topo de CPU, a causa provável pode não ser throughput de tráfego, mas uma condição conhecida do daemon de monitoramento ou da versão/hotfix instalada.",
+    nextChecks: [
+      "Confirmar no top/top -H se monitord ou confd permanece no topo por vários ciclos.",
+      "Validar versão e Jumbo Hotfix instalado.",
+      "Comparar com sk102988 e sk163614 e confirmar aplicabilidade no portal de suporte.",
+      "Abrir TAC se a versão/hotfix do ambiente bater com o cenário descrito no SK."
+    ],
+    references: [
+      {
+        label: "sk102988: monitord and confd consume 100% CPU",
+        url: "https://support.checkpoint.com/results/sk/sk102988"
+      },
+      {
+        label: "sk163614: monitord causes high CPU load in R80.10/R80.20/R80.30",
+        url: "https://support.checkpoint.com/results/sk/sk163614"
+      }
+    ]
+  },
+  highCpuRad: {
+    title: "CPU alta em RAD / rad_resp_slow",
+    trigger: "Acionado somente quando o output do top mostra RAD/rad_resp_slow consumindo CPU alta.",
+    pattern:
+      "Discussões CheckMates associam RAD/rad_resp_slow com CPU alta, lentidão e logs como RAD request exceeded maximum handling time.",
+    interpretation:
+      "O consumo pode estar ligado ao Resource Awareness Daemon processando muitos requests, frequentemente relacionado a Anti-Bot/AV, DNS/URL categorization ou autodebug, dependendo da versão.",
+    nextChecks: [
+      "Confirmar com top -H quais threads RAD estão consumindo CPU.",
+      "Correlacionar com logs de RAD request exceeded maximum handling time.",
+      "Validar Anti-Bot/AV/URL Filtering e volume de requests.",
+      "Checar Jumbo Hotfix aplicável e orientação TAC antes de alterar parâmetros como rad_max_concurrent_requests."
+    ],
+    references: [
+      {
+        label: "CheckMates: Unusual higher than average CPU / RAD",
+        url: "https://community.checkpoint.com/t5/Firewall-and-Security-Management/Unusual-higher-that-average-CPU/td-p/247356"
+      },
+      {
+        label: "CheckMates: High CPU caused by RAD service",
+        url: "https://community.checkpoint.com/t5/Firewall-and-Security-Management/High-CPU-on-Security-Gateway-caused-by-RAD-service-Slow-Internet/td-p/230702"
+      }
+    ]
+  },
+  highCpuPdpdVpnd: {
+    title: "CPU alta em PDPD ou VPND",
+    trigger: "Acionado somente quando o output do top mostra PDPD ou VPND consumindo CPU alta.",
+    pattern:
+      "Há SK público para top/ps mostrando CPU alta por PDPD ou VPND.",
+    interpretation:
+      "Quando PDPD/VPND está no topo, o sintoma pode estar ligado a Identity Awareness/VPN e não apenas ao dataplane genérico.",
+    nextChecks: [
+      "Confirmar processo com top -H/ps.",
+      "Correlacionar com Identity Awareness, VPN, autenticação e volume de sessões.",
+      "Validar aplicabilidade do SK e versão/hotfix do ambiente."
+    ],
+    references: [
+      {
+        label: "sk173706: top/ps shows high CPU by PDPD or VPND",
+        url: "https://support.checkpoint.com/results/sk/sk173706"
+      }
+    ]
+  },
+  highCpuCpdFwm: {
+    title: "CPU alta em CPD/FWM",
+    trigger: "Acionado somente quando o output do top mostra CPD ou FWM consumindo CPU alta.",
+    pattern:
+      "SKs públicos relacionam CPD/FWM a CPU alta em cenários como muitos objetos ou após upgrade.",
+    interpretation:
+      "Se CPD/FWM está no topo, a análise deve considerar processos de controle/management e quantidade de objetos, além de tráfego.",
+    nextChecks: [
+      "Confirmar se o gateway também exerce função de management ou se há atividade de policy install.",
+      "Validar quantidade de objetos/políticas e eventos recentes de upgrade.",
+      "Checar aplicabilidade dos SKs e hotfixes."
+    ],
+    references: [
+      {
+        label: "sk170256: FWM and CPD may consume high CPU due to large number of objects",
+        url: "https://support.checkpoint.com/results/sk/sk170256"
+      },
+      {
+        label: "sk123859: CPD process using more than 90% CPU after upgrade to R80.10",
+        url: "https://support.checkpoint.com/results/sk/sk123859"
+      }
+    ]
+  },
+  highCpuFwInstancesR8030Jhf: {
+    title: "CPU alta em FW instances após JHF específico",
+    trigger: "Acionado somente quando o output indica processo/worker de firewall consumindo CPU alta.",
+    pattern:
+      "Há SK público para CPU alta em algumas FW instances após instalação de R80.30 Jumbo Hotfix Take 210-217.",
+    interpretation:
+      "Se o consumo está concentrado em workers/instances de firewall, além de tráfego e política, vale validar versão/JHF para descartar bug conhecido.",
+    nextChecks: [
+      "Confirmar workers com fw ctl multik stat e top/top -H.",
+      "Validar versão e take do Jumbo Hotfix.",
+      "Checar se o ambiente está em R80.30 Take 210-217 antes de associar ao SK."
+    ],
+    references: [
+      {
+        label: "sk168513: High CPU on FW instances after R80.30 JHF Take 210-217",
+        url: "https://support.checkpoint.com/results/sk/sk168513"
+      }
+    ]
+  },
   loadBasedRxDrops: {
     title: "RX_DRP dependente de carga / ring buffer / SND",
+    trigger: "Acionado somente quando o output mostra drops/errors de interface correlacionados com CPU alta.",
     pattern:
       "Drops de RX que crescem junto com tráfego e CPU podem indicar fila/ring buffer não esvaziada rápido o suficiente, limitação de queue, SND pressionado ou tráfego inválido incrementando contador.",
     interpretation:
@@ -118,6 +228,14 @@ const CHECKPOINT_KNOWLEDGE_BASE = {
   }
 };
 
+const PROCESS_RULES = [
+  { issueId: "highCpuMonitord", pattern: /\b(monitord|confd)\b/i },
+  { issueId: "highCpuRad", pattern: /\b(rad|rad_resp_slow|rad_service)\b/i },
+  { issueId: "highCpuPdpdVpnd", pattern: /\b(pdpd|vpnd)\b/i },
+  { issueId: "highCpuCpdFwm", pattern: /\b(cpd|fwm)\b/i },
+  { issueId: "highCpuFwInstancesR8030Jhf", pattern: /\b(fwk|fw_worker|corexl_fw|fwk\d|fw)\b/i }
+];
+
 export function knownIssueContext(issueId) {
   return CHECKPOINT_KNOWLEDGE_BASE[issueId] ?? null;
 }
@@ -134,6 +252,6 @@ export function attachKnownIssue(diagnostic, issueId) {
   };
 }
 
-export function listKnownIssues() {
-  return Object.entries(CHECKPOINT_KNOWLEDGE_BASE).map(([id, item]) => ({ id, ...item }));
+export function knownIssueIdForProcess(command) {
+  return PROCESS_RULES.find((rule) => rule.pattern.test(command))?.issueId ?? null;
 }

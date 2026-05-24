@@ -1,10 +1,40 @@
-# Base local de problemas conhecidos Check Point
+# Regras acionadas de problemas conhecidos Check Point
 
-O NetGuardian usa uma base local de heurísticas para enriquecer o **Diagnóstico Inteligente** da página de saúde.
+O NetGuardian **não transfere** a base de conhecimento completa da Check Point/CheckMates para dentro da ferramenta.
 
-Essas regras não substituem análise de TAC, SK oficial autenticada ou validação manual. Elas servem para acelerar a interpretação inicial correlacionando sintomas comuns com referências públicas do CheckMates e documentação Check Point.
+O que existe aqui é uma lista pequena de regras acionadas por evidência. Uma referência só aparece na UI quando o output dos comandos de saúde identifica o sintoma correspondente.
+
+Exemplo:
+
+- Se `top` mostrar `monitord` ou `confd` consumindo CPU alta, o NetGuardian mostra referências públicas relacionadas a esse padrão.
+- Se `top` não mostrar esse processo, essas referências não aparecem.
+
+Essas regras não substituem análise de TAC, SK oficial autenticada ou validação manual. Elas servem para acelerar a interpretação inicial quando o ambiente já apresentou um sintoma detectável no output.
 
 ## Padrões modelados
+
+### Processo específico consumindo CPU alta
+
+Correlação usada:
+
+- `top` mostra processo com CPU >= 40%.
+- O nome do processo bate com uma regra salva.
+
+Regras iniciais:
+
+- `monitord` / `confd`
+  - https://support.checkpoint.com/results/sk/sk102988
+  - https://support.checkpoint.com/results/sk/sk163614
+- `rad` / `rad_resp_slow`
+  - https://community.checkpoint.com/t5/Firewall-and-Security-Management/Unusual-higher-that-average-CPU/td-p/247356
+  - https://community.checkpoint.com/t5/Firewall-and-Security-Management/High-CPU-on-Security-Gateway-caused-by-RAD-service-Slow-Internet/td-p/230702
+- `pdpd` / `vpnd`
+  - https://support.checkpoint.com/results/sk/sk173706
+- `cpd` / `fwm`
+  - https://support.checkpoint.com/results/sk/sk170256
+  - https://support.checkpoint.com/results/sk/sk123859
+- FW instances / workers
+  - https://support.checkpoint.com/results/sk/sk168513
 
 ### RX_DRP / RX drops dependentes de carga
 

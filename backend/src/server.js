@@ -10,7 +10,6 @@ import { parseCheckpointResults } from "./parsers.js";
 import { formatMarkdownReport } from "./reportFormatter.js";
 import { applyRoutingPlan, createRoutingPreview } from "./routingValidator.js";
 import { generateTacPackage, getTacPackage } from "./tacPackage.js";
-import { listKnownIssues } from "./checkpointKnowledgeBase.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -205,10 +204,6 @@ app.get("/api/commands", (_req, res) => {
       command
     }))
   );
-});
-
-app.get("/api/knowledge-base", (_req, res) => {
-  res.json(listKnownIssues());
 });
 
 app.get("/api/history", async (_req, res, next) => {
