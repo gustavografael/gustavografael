@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   Archive,
   ArrowLeft,
+  BrainCircuit,
   CheckCircle2,
   Clock3,
   Download,
@@ -287,6 +288,63 @@ function Recommendations({ recommendations }) {
   );
 }
 
+function IntelligentDiagnostics({ diagnostics }) {
+  if (!diagnostics?.length) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-3xl border border-[#EE0C5D]/30 bg-slate-950/60 p-5 shadow-2xl shadow-black/20">
+      <div className="mb-4 flex items-center gap-2">
+        <BrainCircuit className="h-5 w-5 text-[#EE0C5D]" />
+        <div>
+          <h2 className="text-lg font-bold text-white">Diagnóstico Inteligente</h2>
+          <p className="text-sm text-slate-400">Correlação automática entre eventos, métricas e sintomas prováveis.</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {diagnostics.map((item) => {
+          const meta = STATUS_META[item.severity] ?? STATUS_META.unknown;
+          return (
+            <article key={item.id} className={`rounded-3xl border p-5 ${meta.card}`}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-black text-white">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.summary}</p>
+                </div>
+                <StatusBadge status={item.severity} />
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Interpretação</p>
+                <p className="mt-2 text-sm leading-6 text-slate-200">{item.interpretation}</p>
+              </div>
+
+              <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Ação sugerida</p>
+                <p className="mt-2 text-sm leading-6 text-slate-200">{item.recommendation}</p>
+              </div>
+
+              {item.evidence?.length ? (
+                <div className="mt-4 space-y-2">
+                  {item.evidence.map((evidence) => (
+                    <p key={evidence} className="rounded-2xl bg-black/20 px-4 py-3 text-sm text-slate-200">
+                      {evidence}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+
+              <p className="mt-4 text-xs text-slate-500">Confiança: {item.confidence}</p>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SectionCard({ section }) {
   const meta = STATUS_META[section.status] ?? STATUS_META.unknown;
 
@@ -524,6 +582,7 @@ function HealthPage({ onBack }) {
                 </div>
               </div>
               <SummaryTiles report={report} />
+              <IntelligentDiagnostics diagnostics={report.diagnostics} />
               <Recommendations recommendations={report.recommendations} />
               <div className="grid gap-5">
                 {report.sections.map((section) => (

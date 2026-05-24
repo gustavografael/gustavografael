@@ -101,6 +101,7 @@ function publicRun(run) {
     durationMs: run.durationMs,
     overallStatus: run.overallStatus,
     sections: run.sections,
+    diagnostics: run.diagnostics ?? [],
     recommendations: run.recommendations,
     commandCount: run.commandCount
   };

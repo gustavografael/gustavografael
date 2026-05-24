@@ -24,6 +24,23 @@ export function formatMarkdownReport(run) {
     lines.push("");
   }
 
+  if (run.diagnostics?.length) {
+    lines.push("## Diagnóstico Inteligente", "");
+    run.diagnostics.forEach((item) => {
+      lines.push(`### ${item.title}`, "");
+      lines.push(`- **Severidade:** ${STATUS_LABELS[item.severity] ?? item.severity}`);
+      lines.push(`- **Resumo:** ${item.summary}`);
+      lines.push(`- **Interpretação:** ${item.interpretation}`);
+      lines.push(`- **Ação sugerida:** ${item.recommendation}`);
+      lines.push(`- **Confiança:** ${item.confidence}`);
+      if (item.evidence?.length) {
+        lines.push("- **Evidências:**");
+        item.evidence.forEach((evidence) => lines.push(`  - ${evidence}`));
+      }
+      lines.push("");
+    });
+  }
+
   run.sections.forEach((section) => {
     lines.push(`## ${section.title}`, "");
     lines.push(`**Status:** ${STATUS_LABELS[section.status] ?? section.status}`);

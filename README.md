@@ -27,6 +27,11 @@ Dashboard full-stack para executar troubleshooting de firewalls Check Point via 
 - Histórico local das execuções.
 - Exportação do relatório em Markdown.
 - Parsing inteligente com recomendações automáticas.
+- **Diagnóstico Inteligente** na página de saúde, correlacionando eventos para ajudar na interpretação:
+  - RX drops + CPU alta = possível saturação.
+  - SecureXL OFF + throughput alto = possível gargalo em software.
+  - Worker desbalanceado = CoreXL imbalance.
+  - Disco cheio = impacto em logging/performance.
 - Botão **Validar Roteamento das Caixas** para clusters HA:
   - Executa `cphaprob stat` nas duas caixas para identificar active/standby.
   - Executa `show route summary` via `clish`.

@@ -221,6 +221,24 @@ function parseConnections(output) {
   return number ? Number(number) : null;
 }
 
+function parseThroughputMbps(output) {
+  const units = {
+    kbps: 1 / 1000,
+    "kbit/s": 1 / 1000,
+    mbps: 1,
+    "mbit/s": 1,
+    gbps: 1000,
+    "gbit/s": 1000
+  };
+
+  const matches = [...output.matchAll(/(\d+(?:[.,]\d+)?)\s*(gbps|gbit\/s|mbps|mbit\/s|kbps|kbit\/s)/gi)];
+  const values = matches
+    .map((match) => Number(match[1].replace(",", ".")) * units[match[2].toLowerCase()])
+    .filter(Number.isFinite);
+
+  return values.length ? Math.max(...values) : null;
+}
+
 function parseCoreXl(corexlOutput) {
   const rows = corexlOutput
     .split(/\r?\n/)
@@ -250,6 +268,159 @@ function buildOutputMap(resultsByCommand, ids) {
     acc[id] = getOutput(resultsByCommand, id);
     return acc;
   }, {});
+}
+
+function diagnostic({ id, title, severity, summary, evidence, interpretation, recommendation, confidence = "alta" }) {
+  return { id, title, severity, summary, evidence, interpretation, recommendation, confidence };
+}
+
+function buildHealthSignals(resultsByCommand) {
+  const topOutput = getOutput(resultsByCommand, "top");
+  const mpstatOutput = getOutput(resultsByCommand, "mpstat");
+  const netstatOutput = getOutput(resultsByCommand, "netstat");
+  const ifconfigOutput = getOutput(resultsByCommand, "ifconfig");
+  const secureXlOutput = getOutput(resultsByCommand, "securexlStat");
+  const coreXlOutput = getOutput(resultsByCommand, "corexlStat");
+  const diskOutput = getOutput(resultsByCommand, "disk");
+  const cpviewOutput = getOutput(resultsByCommand, "cpview");
+  const fwPstatOutput = getOutput(resultsByCommand, "fwPstat");
+  const connectionsOutput = getOutput(resultsByCommand, "connections");
+
+  const mpstat = parseMpstat(mpstatOutput);
+  const cpuUsage = mpstat.avgUsage ?? parseTopCpu(topOutput);
+  const interfaceRows = [...parseNetstatErrors(netstatOutput), ...parseIfconfigErrors(ifconfigOutput)];
+  const interfacesWithDrops = interfaceRows
+    .map((item) => ({
+      ...item,
+      totalDrops: item.rxDropped + item.txDropped,
+      totalErrors: item.rxErrors + item.txErrors,
+      totalIssues: item.rxErrors + item.rxDropped + item.txErrors + item.txDropped
+    }))
+    .filter((item) => item.totalIssues > 0);
+  const worstInterface = interfacesWithDrops.reduce((max, item) => (item.totalIssues > (max?.totalIssues ?? -1) ? item : max), null);
+  const secureXlDisabled = /disabled|off/i.test(secureXlOutput) && !/enabled|on|running/i.test(secureXlOutput);
+  const coreXl = parseCoreXl(coreXlOutput);
+  const disks = parseDisk(diskOutput);
+  const maxDisk = disks.reduce((max, item) => (item.usagePct > (max?.usagePct ?? -1) ? item : max), null);
+  const throughputMbps = parseThroughputMbps(`${cpviewOutput}\n${fwPstatOutput}`);
+  const connections = parseConnections(connectionsOutput);
+  const tableSaturation = /table.*full|failed.*alloc|out of memory|drop/i.test(fwPstatOutput);
+
+  return {
+    cpuUsage,
+    interfacesWithDrops,
+    worstInterface,
+    secureXlDisabled,
+    coreXlImbalancePct: coreXl.imbalancePct,
+    maxDisk,
+    throughputMbps,
+    connections,
+    tableSaturation
+  };
+}
+
+function buildIntelligentDiagnostics(resultsByCommand) {
+  const signals = buildHealthSignals(resultsByCommand);
+  const diagnostics = [];
+  const cpuHigh = signals.cpuUsage !== null && signals.cpuUsage >= 85;
+  const cpuCritical = signals.cpuUsage !== null && signals.cpuUsage >= 90;
+  const hasDrops = signals.interfacesWithDrops.length > 0;
+  const throughputHigh = signals.throughputMbps !== null ? signals.throughputMbps >= 500 : (signals.connections ?? 0) >= 100000;
+
+  if (hasDrops && cpuHigh) {
+    diagnostics.push(
+      diagnostic({
+        id: "rx-drops-cpu-saturation",
+        title: "Possível saturação do gateway",
+        severity: cpuCritical || (signals.worstInterface?.totalIssues ?? 0) > 100 ? "critical" : "warning",
+        summary: "RX/TX drops ou errors aparecem junto com CPU alta.",
+        evidence: [
+          `CPU estimada: ${signals.cpuUsage.toFixed(1)}%`,
+          `Interface mais afetada: ${signals.worstInterface.iface} (${signals.worstInterface.totalIssues} drops/errors)`,
+          `${signals.interfacesWithDrops.length} interface(s) com drops/errors`
+        ],
+        interpretation: "Quando drops de interface coincidem com CPU alta, o firewall pode estar saturado e descartando pacotes por pressão de processamento ou fila.",
+        recommendation: "Validar throughput por interface, top talkers, política de inspeção, CoreXL/SecureXL e capacidade do appliance."
+      })
+    );
+  }
+
+  if (signals.secureXlDisabled && throughputHigh) {
+    diagnostics.push(
+      diagnostic({
+        id: "securexl-off-throughput",
+        title: "Gargalo por processamento em software",
+        severity: signals.throughputMbps !== null && signals.throughputMbps >= 1000 ? "critical" : "warning",
+        summary: "SecureXL está OFF/inativo enquanto há indício de tráfego alto.",
+        evidence: [
+          "SecureXL: OFF/inativo",
+          signals.throughputMbps !== null
+            ? `Throughput detectado: ${signals.throughputMbps.toFixed(1)} Mbps`
+            : `Conexões reportadas: ${(signals.connections ?? 0).toLocaleString("pt-BR")}`
+        ],
+        interpretation: "Sem aceleração SecureXL, mais tráfego passa pelo caminho lento de software, aumentando risco de gargalo de CPU.",
+        recommendation: "Verificar motivo do SecureXL estar desabilitado, templates/acceleration, blades que impedem aceleração e impacto de regras."
+      })
+    );
+  }
+
+  if (signals.coreXlImbalancePct !== null && signals.coreXlImbalancePct > 80) {
+    diagnostics.push(
+      diagnostic({
+        id: "corexl-worker-imbalance",
+        title: "CoreXL imbalance",
+        severity: "warning",
+        summary: "Workers CoreXL aparentam estar desbalanceados.",
+        evidence: [`Desbalanceamento estimado: ${signals.coreXlImbalancePct.toFixed(1)}%`],
+        interpretation: "Um ou poucos workers podem estar recebendo carga desproporcional, causando latência ou CPU alta mesmo com cores livres.",
+        recommendation: "Validar elephant flows, afinidade, distribuição de SND/worker, SecureXL templates e balanceamento de interfaces."
+      })
+    );
+  }
+
+  if (signals.maxDisk && signals.maxDisk.usagePct >= 85) {
+    diagnostics.push(
+      diagnostic({
+        id: "disk-logging-performance",
+        title: "Risco de impacto em logging/performance",
+        severity: signals.maxDisk.usagePct >= 90 ? "critical" : "warning",
+        summary: "Filesystem com uso elevado pode afetar logs, dumps e processos do gateway.",
+        evidence: [`${signals.maxDisk.mount}: ${signals.maxDisk.usagePct}% usado`, `Filesystem: ${signals.maxDisk.filesystem}`],
+        interpretation: "Disco cheio tende a impactar escrita de logs, geração de dumps, upgrades e estabilidade de serviços.",
+        recommendation: "Limpar/rotacionar logs, mover pacotes antigos, validar retenção e aumentar capacidade quando necessário."
+      })
+    );
+  }
+
+  if (signals.tableSaturation) {
+    diagnostics.push(
+      diagnostic({
+        id: "connections-table-pressure",
+        title: "Pressão na tabela de conexões",
+        severity: "critical",
+        summary: "fw ctl pstat indica possível saturação, drops ou falhas de alocação.",
+        evidence: ["Sinais de saturação encontrados em fw ctl pstat"],
+        interpretation: "Falhas na tabela de conexões podem causar queda de sessões novas ou comportamento intermitente.",
+        recommendation: "Validar limites de tabela, taxa de novas conexões, timeouts, possíveis ataques ou varreduras e sizing do gateway."
+      })
+    );
+  }
+
+  if (!diagnostics.length) {
+    diagnostics.push(
+      diagnostic({
+        id: "no-critical-correlation",
+        title: "Sem correlação crítica evidente",
+        severity: "healthy",
+        summary: "Nenhuma combinação crítica foi detectada entre CPU, drops, SecureXL, CoreXL e disco.",
+        evidence: ["Os sinais avaliados não cruzaram os limiares de correlação."],
+        interpretation: "A análise não encontrou um padrão composto de falha nos dados coletados.",
+        recommendation: "Se houver sintoma reportado, correlacione horário, tráfego, logs e mudanças recentes."
+      })
+    );
+  }
+
+  return diagnostics;
 }
 
 export function parseCheckpointResults(resultsByCommand) {
@@ -506,10 +677,12 @@ export function parseCheckpointResults(resultsByCommand) {
 
   const overallScore = Math.max(...sections.map((item) => SEVERITY_SCORE[item.status] ?? 0));
   const recommendations = sections.flatMap((item) => item.recommendations.map((text) => ({ section: item.title, text })));
+  const diagnostics = buildIntelligentDiagnostics(resultsByCommand);
 
   return {
     overallStatus: SCORE_SEVERITY[overallScore] ?? "unknown",
     sections,
-    recommendations
+    recommendations,
+    diagnostics
   };
 }
