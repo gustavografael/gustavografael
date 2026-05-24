@@ -1,6 +1,6 @@
-# Dashboard de Troubleshooting Firewall Check Point
+# NetGuardian
 
-Aplicação full-stack para executar troubleshooting de firewalls Check Point via SSH e apresentar os resultados em uma dashboard moderna.
+Dashboard full-stack para executar troubleshooting de firewalls Check Point via SSH e apresentar os resultados em uma interface moderna.
 
 ## Funcionalidades
 

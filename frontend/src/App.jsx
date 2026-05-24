@@ -169,7 +169,7 @@ function HomePage({ onOpenHealth, onOpenRouting }) {
   return (
     <Shell>
       <Header
-        title="Dashboard de troubleshooting por botões"
+        title="NetGuardian"
         description="Escolha uma automação para diagnosticar firewalls Check Point. Cada botão abre uma página secundária com output, diff e ações seguras."
         right={
           <div className="rounded-3xl border border-white/10 bg-black/20 p-5">

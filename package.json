@@ -1,8 +1,8 @@
 {
-  "name": "checkpoint-firewall-troubleshooting-dashboard",
+  "name": "netguardian",
   "version": "1.0.0",
   "private": true,
-  "description": "Dashboard moderno para troubleshooting de firewalls Check Point via SSH.",
+  "description": "NetGuardian: dashboard moderno para troubleshooting de firewalls Check Point via SSH.",
   "workspaces": [
     "backend",
     "frontend"

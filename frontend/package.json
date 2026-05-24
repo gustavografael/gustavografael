@@ -1,5 +1,5 @@
 {
-  "name": "@checkpoint-dashboard/frontend",
+  "name": "@netguardian/frontend",
   "version": "1.0.0",
   "private": true,
   "type": "module",

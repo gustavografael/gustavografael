@@ -1,6 +1,6 @@
 # Referência de APIs Check Point
 
-Link oficial informado para uso nos próximos botões do dashboard:
+Link oficial informado para uso nos próximos botões do NetGuardian:
 
 - https://sc1.checkpoint.com/documents/latest/APIs/index.html#introduction~v2.1%20
 
