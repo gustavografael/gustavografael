@@ -59,14 +59,14 @@ Campos aceitos:
 O projeto usa apenas biblioteca padrao do Python.
 
 ```bash
-python -m classic_car_finder.cli import examples/marketplace_snapshot.csv
-python -m classic_car_finder.cli analyze
+PYTHONPATH=src python3 -m classic_car_finder.cli import examples/marketplace_snapshot.csv
+PYTHONPATH=src python3 -m classic_car_finder.cli analyze
 ```
 
 Tambem e possivel instalar localmente em modo editavel:
 
 ```bash
-python -m pip install -e .
+python3 -m pip install -e .
 classic-car-finder import examples/marketplace_snapshot.csv
 classic-car-finder analyze
 ```
@@ -86,8 +86,8 @@ classic-car-finder analyze --max-year 1989 --min-drops 2 --min-discount 20
 ## Exemplo rapido
 
 ```bash
-python -m classic_car_finder.cli import examples/marketplace_snapshot.csv
-python -m classic_car_finder.cli analyze
+PYTHONPATH=src python3 -m classic_car_finder.cli import examples/marketplace_snapshot.csv
+PYTHONPATH=src python3 -m classic_car_finder.cli analyze
 ```
 
 Resultado esperado: o Opala 1978 do exemplo aparece porque teve duas reducoes
