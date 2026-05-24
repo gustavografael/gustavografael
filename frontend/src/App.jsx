@@ -129,12 +129,12 @@ function Field({ label, children, hint }) {
 }
 
 function inputClassName() {
-  return "w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/70 focus:bg-white/[0.14] focus:ring-4 focus:ring-cyan-300/10";
+  return "w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-[#EE0C5D]/70 focus:bg-white/[0.14] focus:ring-4 focus:ring-[#EE0C5D]/15";
 }
 
 function Shell({ children }) {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0e7490_0,#0f172a_35%,#020617_100%)] text-white">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#EE0C5D_0%,#41273C_34%,#231F20_100%)] text-white">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">{children}</div>
     </main>
   );
@@ -147,7 +147,7 @@ function Header({ eyebrow = "Firewall Check Point", title, description, right, o
         <button
           type="button"
           onClick={onBack}
-          className="mb-6 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-bold text-slate-100 transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
+          className="mb-6 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-bold text-slate-100 transition hover:border-[#EE0C5D]/45 hover:bg-[#EE0C5D]/10"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para botões
@@ -155,7 +155,7 @@ function Header({ eyebrow = "Firewall Check Point", title, description, right, o
       ) : null}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#EE0C5D]/25 bg-[#EE0C5D]/10 px-4 py-2 text-sm font-semibold text-[#FFD6E5]">
             <Network className="h-4 w-4" />
             {eyebrow}
           </div>
@@ -201,7 +201,7 @@ function HomePage({ onOpenHealth, onOpenRouting, onOpenTac }) {
         right={
           <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
             <p className="text-sm text-slate-400">Botões disponíveis</p>
-            <p className="mt-2 text-3xl font-black text-cyan-100">3</p>
+            <p className="mt-2 text-3xl font-black text-[#FFD6E5]">3</p>
           </div>
         }
       />
@@ -214,14 +214,14 @@ function HomePage({ onOpenHealth, onOpenRouting, onOpenTac }) {
               key={item.title}
               type="button"
               onClick={item.action}
-              className="group rounded-[2rem] border border-white/10 bg-white/[0.06] p-7 text-left shadow-2xl shadow-black/20 backdrop-blur transition hover:-translate-y-1 hover:border-cyan-300/50 hover:bg-cyan-300/10"
+              className="group rounded-[2rem] border border-white/10 bg-white/[0.06] p-7 text-left shadow-2xl shadow-black/20 backdrop-blur transition hover:-translate-y-1 hover:border-[#EE0C5D]/55 hover:bg-[#EE0C5D]/10"
             >
-              <div className="mb-6 inline-flex rounded-3xl bg-cyan-300/10 p-4 text-cyan-200 ring-1 ring-cyan-300/20">
+              <div className="mb-6 inline-flex rounded-3xl bg-[#EE0C5D]/10 p-4 text-[#FF9FC4] ring-1 ring-[#EE0C5D]/25">
                 <Icon className="h-8 w-8" />
               </div>
               <h2 className="text-2xl font-black text-white">{item.title}</h2>
               <p className="mt-3 min-h-20 text-sm leading-6 text-slate-300">{item.description}</p>
-              <span className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition group-hover:bg-cyan-200">
+              <span className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#EE0C5D] px-5 py-3 text-sm font-black text-slate-950 transition group-hover:bg-[#FF4D8D]">
                 {item.cta}
               </span>
             </button>
@@ -270,15 +270,15 @@ function Recommendations({ recommendations }) {
   }
 
   return (
-    <div className="rounded-3xl border border-cyan-300/20 bg-slate-950/50 p-5">
+    <div className="rounded-3xl border border-[#EE0C5D]/25 bg-slate-950/50 p-5">
       <div className="mb-4 flex items-center gap-2">
-        <ShieldCheck className="h-5 w-5 text-cyan-300" />
+        <ShieldCheck className="h-5 w-5 text-[#EE0C5D]" />
         <h2 className="text-lg font-bold text-white">Recomendações automáticas</h2>
       </div>
       <div className="space-y-3">
         {recommendations.map((recommendation, index) => (
           <div key={`${recommendation.section}-${index}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-sm font-semibold text-cyan-100">{recommendation.section}</p>
+            <p className="text-sm font-semibold text-[#FFD6E5]">{recommendation.section}</p>
             <p className="mt-1 text-sm text-slate-300">{recommendation.text}</p>
           </div>
         ))}
@@ -337,7 +337,7 @@ function HistoryPanel({ history, onSelectRun, selectedRunId }) {
   return (
     <aside className="rounded-3xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/20 backdrop-blur">
       <div className="mb-4 flex items-center gap-2">
-        <History className="h-5 w-5 text-cyan-300" />
+        <History className="h-5 w-5 text-[#EE0C5D]" />
         <h2 className="text-lg font-bold text-white">Histórico de saúde</h2>
       </div>
       {history.length ? (
@@ -347,8 +347,8 @@ function HistoryPanel({ history, onSelectRun, selectedRunId }) {
               key={item.id}
               type="button"
               onClick={() => onSelectRun(item.id)}
-              className={`w-full rounded-2xl border p-4 text-left transition hover:border-cyan-300/50 hover:bg-cyan-300/10 ${
-                selectedRunId === item.id ? "border-cyan-300/60 bg-cyan-300/10" : "border-white/10 bg-black/20"
+              className={`w-full rounded-2xl border p-4 text-left transition hover:border-[#EE0C5D]/55 hover:bg-[#EE0C5D]/10 ${
+                selectedRunId === item.id ? "border-[#EE0C5D]/65 bg-[#EE0C5D]/10" : "border-white/10 bg-black/20"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
@@ -434,7 +434,7 @@ function HealthPage({ onBack }) {
         right={
           <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
             <p className="text-sm text-slate-400">Botão atual</p>
-            <p className="mt-2 flex items-center gap-2 text-lg font-bold text-cyan-100">
+            <p className="mt-2 flex items-center gap-2 text-lg font-bold text-[#FFD6E5]">
               <TerminalSquare className="h-5 w-5" />
               Verificar Saúde do Ambiente
             </p>
@@ -446,7 +446,7 @@ function HealthPage({ onBack }) {
         <section className="space-y-8">
           <form onSubmit={handleSubmit} className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
             <div className="mb-6 flex items-center gap-3">
-              <div className="rounded-2xl bg-cyan-300/10 p-3 text-cyan-200">
+              <div className="rounded-2xl bg-[#EE0C5D]/10 p-3 text-[#FF9FC4]">
                 <Server className="h-6 w-6" />
               </div>
               <div>
@@ -487,7 +487,7 @@ function HealthPage({ onBack }) {
               <button
                 type="submit"
                 disabled={!canSubmit || loading}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#EE0C5D] px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-[#650C50]/35 transition hover:bg-[#FF4D8D] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
                 Verificar Saúde do Ambiente
@@ -496,7 +496,7 @@ function HealthPage({ onBack }) {
                 <button
                   type="button"
                   onClick={() => downloadReport(report.id)}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:border-cyan-300/40 hover:bg-cyan-300/10"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:border-[#EE0C5D]/45 hover:bg-[#EE0C5D]/10"
                 >
                   <Download className="h-5 w-5" />
                   Exportar relatório
@@ -514,7 +514,7 @@ function HealthPage({ onBack }) {
               <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm uppercase tracking-[0.3em] text-cyan-200">Resultado</p>
+                    <p className="text-sm uppercase tracking-[0.3em] text-[#FF9FC4]">Resultado</p>
                     <h2 className="mt-2 text-2xl font-black">{report.target.hostname}</h2>
                     <p className="mt-1 text-sm text-slate-400">
                       {report.target.gatewayIp} • {new Date(report.startedAt).toLocaleString("pt-BR")} • {report.durationMs} ms
@@ -544,7 +544,7 @@ function LoadingCard({ title, subtitle }) {
   return (
     <div className="flex min-h-64 items-center justify-center rounded-[2rem] border border-white/10 bg-white/[0.06]">
       <div className="text-center">
-        <Loader2 className="mx-auto h-10 w-10 animate-spin text-cyan-300" />
+        <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#EE0C5D]" />
         <p className="mt-4 font-bold text-white">{title}</p>
         <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
       </div>
@@ -579,7 +579,7 @@ function RoutingResult({ preview, confirmation, setConfirmation, applying, apply
       <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-cyan-200">Resultado roteamento</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-[#FF9FC4]">Resultado roteamento</p>
             <h2 className="mt-2 text-2xl font-black">{preview.message}</h2>
             <p className="mt-1 text-sm text-slate-400">Executado em {new Date(preview.startedAt).toLocaleString("pt-BR")} • {preview.durationMs} ms</p>
           </div>
@@ -593,11 +593,11 @@ function RoutingResult({ preview, confirmation, setConfirmation, applying, apply
             <p className="text-sm text-slate-300">{preview.active.target.gatewayIp}</p>
             <p className="mt-3 text-sm text-emerald-100">{preview.active.routeCount} rotas analisadas</p>
           </div>
-          <div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/10 p-5">
-            <p className="text-xs uppercase tracking-[0.25em] text-cyan-200">Caixa standby</p>
+          <div className="rounded-3xl border border-[#EE0C5D]/25 bg-[#EE0C5D]/10 p-5">
+            <p className="text-xs uppercase tracking-[0.25em] text-[#FF9FC4]">Caixa standby</p>
             <p className="mt-2 text-xl font-black">{preview.standby.target.hostname}</p>
             <p className="text-sm text-slate-300">{preview.standby.target.gatewayIp}</p>
-            <p className="mt-3 text-sm text-cyan-100">{preview.standby.routeCount} rotas analisadas</p>
+            <p className="mt-3 text-sm text-[#FFD6E5]">{preview.standby.routeCount} rotas analisadas</p>
           </div>
         </div>
       </div>
@@ -609,7 +609,7 @@ function RoutingResult({ preview, confirmation, setConfirmation, applying, apply
 
       <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
         <div className="mb-5 flex items-center gap-2">
-          <GitCompareArrows className="h-5 w-5 text-cyan-300" />
+          <GitCompareArrows className="h-5 w-5 text-[#EE0C5D]" />
           <h3 className="text-xl font-black">O que será mudado antes da correção</h3>
         </div>
 
@@ -621,7 +621,7 @@ function RoutingResult({ preview, confirmation, setConfirmation, applying, apply
                 <code className="mt-2 block overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-300">clish -c "{item.clishCommand}"</code>
               </div>
             ))}
-            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm text-cyan-100">
+            <div className="rounded-2xl border border-[#EE0C5D]/25 bg-[#EE0C5D]/10 p-4 text-sm text-[#FFD6E5]">
               Após aplicar as mudanças, o backend executa <code>clish -c "save config"</code>.
             </div>
           </div>
@@ -752,8 +752,8 @@ function RoutingPage({ onBack }) {
         right={
           <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
             <p className="text-sm text-slate-400">Comandos base</p>
-            <p className="mt-2 text-sm font-bold text-cyan-100">cphaprob stat</p>
-            <p className="text-sm font-bold text-cyan-100">show route summary</p>
+            <p className="mt-2 text-sm font-bold text-[#FFD6E5]">cphaprob stat</p>
+            <p className="text-sm font-bold text-[#FFD6E5]">show route summary</p>
           </div>
         }
       />
@@ -761,7 +761,7 @@ function RoutingPage({ onBack }) {
       <section className="space-y-8">
         <form onSubmit={handlePreview} className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
           <div className="mb-6 flex items-center gap-3">
-            <div className="rounded-2xl bg-cyan-300/10 p-3 text-cyan-200">
+            <div className="rounded-2xl bg-[#EE0C5D]/10 p-3 text-[#FF9FC4]">
               <Route className="h-6 w-6" />
             </div>
             <div>
@@ -817,7 +817,7 @@ function RoutingPage({ onBack }) {
           <button
             type="submit"
             disabled={!canSubmit || loading}
-            className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#EE0C5D] px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-[#650C50]/35 transition hover:bg-[#FF4D8D] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <GitCompareArrows className="h-5 w-5" />}
             Validar Roteamento das Caixas
@@ -897,9 +897,9 @@ function TacPackagePage({ onBack }) {
         right={
           <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
             <p className="text-sm text-slate-400">Coletas</p>
-            <p className="mt-2 text-sm font-bold text-cyan-100">cpinfo</p>
-            <p className="text-sm font-bold text-cyan-100">cpview export</p>
-            <p className="text-sm font-bold text-cyan-100">logs + dumps + tar.gz</p>
+            <p className="mt-2 text-sm font-bold text-[#FFD6E5]">cpinfo</p>
+            <p className="text-sm font-bold text-[#FFD6E5]">cpview export</p>
+            <p className="text-sm font-bold text-[#FFD6E5]">logs + dumps + tar.gz</p>
           </div>
         }
       />
@@ -907,7 +907,7 @@ function TacPackagePage({ onBack }) {
       <section className="space-y-8">
         <form onSubmit={handleSubmit} className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
           <div className="mb-6 flex items-center gap-3">
-            <div className="rounded-2xl bg-cyan-300/10 p-3 text-cyan-200">
+            <div className="rounded-2xl bg-[#EE0C5D]/10 p-3 text-[#FF9FC4]">
               <Archive className="h-6 w-6" />
             </div>
             <div>
@@ -947,7 +947,7 @@ function TacPackagePage({ onBack }) {
           <button
             type="submit"
             disabled={!canSubmit || loading}
-            className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#EE0C5D] px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-[#650C50]/35 transition hover:bg-[#FF4D8D] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Archive className="h-5 w-5" />}
             Gerar Pacote TAC
@@ -961,7 +961,7 @@ function TacPackagePage({ onBack }) {
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm uppercase tracking-[0.3em] text-cyan-200">Pacote TAC</p>
+                  <p className="text-sm uppercase tracking-[0.3em] text-[#FF9FC4]">Pacote TAC</p>
                   <h2 className="mt-2 text-2xl font-black">{result.message}</h2>
                   <p className="mt-1 text-sm text-slate-400">
                     {result.target.hostname} • {result.target.gatewayIp} • {formatBytes(result.sizeBytes)} • {result.durationMs} ms
@@ -982,7 +982,7 @@ function TacPackagePage({ onBack }) {
 
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/20 backdrop-blur">
               <div className="mb-5 flex items-center gap-2">
-                <TerminalSquare className="h-5 w-5 text-cyan-300" />
+                <TerminalSquare className="h-5 w-5 text-[#EE0C5D]" />
                 <h3 className="text-xl font-black">Etapas executadas</h3>
               </div>
               <div className="space-y-3">

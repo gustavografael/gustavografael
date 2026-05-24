@@ -46,6 +46,7 @@ Dashboard full-stack para executar troubleshooting de firewalls Check Point via 
 
 - Backend: Node.js, Express, node-ssh, Zod.
 - Frontend: React, Vite, Tailwind CSS, lucide-react.
+- Identidade visual inspirada na paleta Check Point: Brand Berry `#EE0C5D`, Gravitas Grey `#41273C` e Black `#231F20`.
 
 ## Referência para próximos botões
 
