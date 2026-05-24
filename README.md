@@ -9,7 +9,8 @@ O foco do MVP e simples:
 - considerar apenas carros antigos (por padrao, ano ate 1999);
 - encontrar anuncios em que o dono ja baixou o preco mais de uma vez;
 - calcular desconto contra um valor de mercado estimado;
-- ordenar as oportunidades por um score de revenda.
+- ordenar as oportunidades por um score de revenda;
+- gerar uma pagina HTML com cards e links clicaveis para abrir os anuncios.
 
 > Observacao: este projeto nao automatiza login, nao burla controles do
 > Facebook e nao faz scraping agressivo. Use snapshots/exportacoes que voce tem
@@ -19,7 +20,8 @@ O foco do MVP e simples:
 
 1. Voce coleta um snapshot das listagens em CSV ou JSON.
 2. O comando `import` adiciona esse snapshot ao historico local.
-3. O comando `analyze` cruza o historico e mostra oportunidades.
+3. O comando `analyze` cruza o historico e mostra oportunidades no terminal.
+4. O comando `report` gera uma pagina HTML para revisar as recomendacoes.
 
 Para que um carro apareca como oportunidade, ele precisa cumprir todos os
 criterios padrao:
@@ -61,6 +63,7 @@ O projeto usa apenas biblioteca padrao do Python.
 ```bash
 PYTHONPATH=src python3 -m classic_car_finder.cli import examples/marketplace_snapshot.csv
 PYTHONPATH=src python3 -m classic_car_finder.cli analyze
+PYTHONPATH=src python3 -m classic_car_finder.cli report
 ```
 
 Tambem e possivel instalar localmente em modo editavel:
@@ -69,6 +72,7 @@ Tambem e possivel instalar localmente em modo editavel:
 python3 -m pip install -e .
 classic-car-finder import examples/marketplace_snapshot.csv
 classic-car-finder analyze
+classic-car-finder report
 ```
 
 Saida JSON:
@@ -83,15 +87,26 @@ Ajustando criterios:
 classic-car-finder analyze --max-year 1989 --min-drops 2 --min-discount 20
 ```
 
+Gerando uma pagina HTML:
+
+```bash
+classic-car-finder report --output reports/recommendations.html
+```
+
+Abra o arquivo gerado no navegador. Cada recomendacao com URL tem um botao
+`Ver anuncio` para entrar direto no carro.
+
 ## Exemplo rapido
 
 ```bash
 PYTHONPATH=src python3 -m classic_car_finder.cli import examples/marketplace_snapshot.csv
 PYTHONPATH=src python3 -m classic_car_finder.cli analyze
+PYTHONPATH=src python3 -m classic_car_finder.cli report --output examples/recommendations.html
 ```
 
 Resultado esperado: o Opala 1978 do exemplo aparece porque teve duas reducoes
-de preco e ficou abaixo do valor de mercado informado.
+de preco e ficou abaixo do valor de mercado informado. A pagina pronta para
+visualizacao fica em `examples/recommendations.html`.
 
 ## Roadmap sugerido
 

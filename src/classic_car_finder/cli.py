@@ -6,6 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from classic_car_finder.analyzer import OpportunityCriteria, find_opportunities
+from classic_car_finder.presentation import money, percent, render_html_report
 from classic_car_finder.storage import (
     load_store,
     merge_snapshots,
@@ -15,14 +16,7 @@ from classic_car_finder.storage import (
 
 
 DEFAULT_STORE = Path("data/listings.json")
-
-
-def money(value: Decimal) -> str:
-    return f"R$ {value:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
-
-
-def percent(value: Decimal) -> str:
-    return f"{value:.2f}%".replace(".", ",")
+DEFAULT_REPORT = Path("reports/recommendations.html")
 
 
 def import_snapshots(args: argparse.Namespace) -> int:
@@ -41,12 +35,7 @@ def import_snapshots(args: argparse.Namespace) -> int:
 
 def analyze(args: argparse.Namespace) -> int:
     snapshots = load_store(Path(args.store))
-    criteria = OpportunityCriteria(
-        max_model_year=args.max_year,
-        min_price_drop_count=args.min_drops,
-        min_discount_to_market_percent=Decimal(str(args.min_discount)),
-        min_total_drop_percent=Decimal(str(args.min_total_drop)),
-    )
+    criteria = criteria_from_args(args)
     opportunities = find_opportunities(snapshots, criteria)
 
     if args.json:
@@ -83,6 +72,59 @@ def analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+def criteria_from_args(args: argparse.Namespace) -> OpportunityCriteria:
+    return OpportunityCriteria(
+        max_model_year=args.max_year,
+        min_price_drop_count=args.min_drops,
+        min_discount_to_market_percent=Decimal(str(args.min_discount)),
+        min_total_drop_percent=Decimal(str(args.min_total_drop)),
+    )
+
+
+def report(args: argparse.Namespace) -> int:
+    snapshots = load_store(Path(args.store))
+    opportunities = find_opportunities(snapshots, criteria_from_args(args))
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        render_html_report(opportunities, title=args.title),
+        encoding="utf-8",
+    )
+
+    print(
+        f"Relatorio HTML salvo em {output_path} "
+        f"com {len(opportunities)} recomendacao(oes)."
+    )
+    return 0
+
+
+def add_criteria_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--max-year",
+        type=int,
+        default=1999,
+        help="Ano maximo para considerar carro antigo. Padrao: 1999.",
+    )
+    parser.add_argument(
+        "--min-drops",
+        type=int,
+        default=2,
+        help="Quantidade minima de reducoes de preco. Padrao: 2.",
+    )
+    parser.add_argument(
+        "--min-discount",
+        type=Decimal,
+        default=Decimal("15"),
+        help="Desconto minimo em relacao ao valor de mercado estimado. Padrao: 15.",
+    )
+    parser.add_argument(
+        "--min-total-drop",
+        type=Decimal,
+        default=Decimal("5"),
+        help="Queda minima desde o primeiro preco visto. Padrao: 5.",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="classic-car-finder",
@@ -112,36 +154,34 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_STORE,
         help=f"Arquivo de historico local. Padrao: {DEFAULT_STORE}",
     )
-    analyze_parser.add_argument(
-        "--max-year",
-        type=int,
-        default=1999,
-        help="Ano maximo para considerar carro antigo. Padrao: 1999.",
-    )
-    analyze_parser.add_argument(
-        "--min-drops",
-        type=int,
-        default=2,
-        help="Quantidade minima de reducoes de preco. Padrao: 2.",
-    )
-    analyze_parser.add_argument(
-        "--min-discount",
-        type=Decimal,
-        default=Decimal("15"),
-        help="Desconto minimo em relacao ao valor de mercado estimado. Padrao: 15.",
-    )
-    analyze_parser.add_argument(
-        "--min-total-drop",
-        type=Decimal,
-        default=Decimal("5"),
-        help="Queda minima desde o primeiro preco visto. Padrao: 5.",
-    )
+    add_criteria_arguments(analyze_parser)
     analyze_parser.add_argument(
         "--json",
         action="store_true",
         help="Imprime oportunidades em JSON.",
     )
     analyze_parser.set_defaults(func=analyze)
+
+    report_parser = subparsers.add_parser(
+        "report", help="Gera uma pagina HTML com as recomendacoes."
+    )
+    report_parser.add_argument(
+        "--store",
+        default=DEFAULT_STORE,
+        help=f"Arquivo de historico local. Padrao: {DEFAULT_STORE}",
+    )
+    report_parser.add_argument(
+        "--output",
+        default=DEFAULT_REPORT,
+        help=f"Arquivo HTML de saida. Padrao: {DEFAULT_REPORT}",
+    )
+    report_parser.add_argument(
+        "--title",
+        default="Recomendacoes de carros antigos",
+        help="Titulo exibido no relatorio HTML.",
+    )
+    add_criteria_arguments(report_parser)
+    report_parser.set_defaults(func=report)
 
     return parser
 

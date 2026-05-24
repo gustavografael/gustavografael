@@ -4,6 +4,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from classic_car_finder.analyzer import OpportunityCriteria, find_opportunities
+from classic_car_finder.presentation import render_html_report
 from classic_car_finder.storage import read_snapshot_file
 
 
@@ -77,6 +78,35 @@ class AnalyzerTest(unittest.TestCase):
 
         self.assertEqual(len(opportunities), 1)
         self.assertEqual(opportunities[0].listing_id, "civic")
+
+    def test_html_report_includes_recommendation_link(self):
+        snapshot = self.write_snapshot(
+            [
+                "listing_id,title,url,price,year,market_value,captured_at",
+                (
+                    "opala,Chevrolet Opala 1978,"
+                    "https://www.facebook.com/marketplace/item/opala,45000,"
+                    "1978,50000,2026-05-01T12:00:00Z"
+                ),
+                (
+                    "opala,Chevrolet Opala 1978,"
+                    "https://www.facebook.com/marketplace/item/opala,42000,"
+                    "1978,50000,2026-05-10T12:00:00Z"
+                ),
+                (
+                    "opala,Chevrolet Opala 1978,"
+                    "https://www.facebook.com/marketplace/item/opala,38000,"
+                    "1978,50000,2026-05-20T12:00:00Z"
+                ),
+            ]
+        )
+        opportunities = find_opportunities(read_snapshot_file(snapshot))
+
+        html = render_html_report(opportunities)
+
+        self.assertIn("Ver anuncio", html)
+        self.assertIn('target="_blank"', html)
+        self.assertIn("https://www.facebook.com/marketplace/item/opala", html)
 
 
 if __name__ == "__main__":
