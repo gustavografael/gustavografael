@@ -170,8 +170,16 @@
     }
 
     .actions {
+      align-items: flex-start;
       display: flex;
+      flex-direction: column;
+      gap: 10px;
       margin-top: 20px;
+    }
+
+    .link-status {
+      color: var(--muted);
+      font-size: 0.92rem;
     }
 
     .button {
@@ -186,6 +194,16 @@
 
     .button:hover {
       background: var(--primary-dark);
+    }
+
+    .button-secondary {
+      background: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .button-secondary:hover {
+      background: #f7eee6;
     }
 
     .button-disabled {
@@ -226,7 +244,7 @@
 
     <section class="summary" aria-label="Resumo">
       <span class="pill">6 recomendacao(oes)</span>
-      <span class="pill">Gerado em 2026-05-24 01:03 UTC</span>
+      <span class="pill">Gerado em 2026-05-24 01:15 UTC</span>
       <span class="pill">Filtro: 2+ quedas de preco</span>
     </section>
 
@@ -272,7 +290,7 @@
         </p>
 
         <div class="actions">
-          <a class="button" href="https://www.facebook.com/marketplace/search/?query=Volkswagen%20Brasilia%201978" target="_blank" rel="noopener noreferrer">Buscar no Marketplace</a>
+          <span class="link-status">Link exato do anuncio nao informado neste snapshot.</span><a class="button button-secondary" href="https://www.facebook.com/marketplace/search/?query=Volkswagen%20Brasilia%201978" target="_blank" rel="noopener noreferrer">Abrir busca semelhante</a>
         </div>
       </article>
     
@@ -317,7 +335,7 @@
         </p>
 
         <div class="actions">
-          <a class="button" href="https://www.facebook.com/marketplace/search/?query=Chevrolet%20Opala%20Comodoro%201978" target="_blank" rel="noopener noreferrer">Buscar no Marketplace</a>
+          <span class="link-status">Link exato do anuncio nao informado neste snapshot.</span><a class="button button-secondary" href="https://www.facebook.com/marketplace/search/?query=Chevrolet%20Opala%20Comodoro%201978" target="_blank" rel="noopener noreferrer">Abrir busca semelhante</a>
         </div>
       </article>
     
@@ -362,7 +380,7 @@
         </p>
 
         <div class="actions">
-          <a class="button" href="https://www.facebook.com/marketplace/search/?query=Chevrolet%20Chevette%201987" target="_blank" rel="noopener noreferrer">Buscar no Marketplace</a>
+          <span class="link-status">Link exato do anuncio nao informado neste snapshot.</span><a class="button button-secondary" href="https://www.facebook.com/marketplace/search/?query=Chevrolet%20Chevette%201987" target="_blank" rel="noopener noreferrer">Abrir busca semelhante</a>
         </div>
       </article>
     
@@ -407,7 +425,7 @@
         </p>
 
         <div class="actions">
-          <a class="button" href="https://www.facebook.com/marketplace/search/?query=Chevrolet%20Caravan%201980" target="_blank" rel="noopener noreferrer">Buscar no Marketplace</a>
+          <span class="link-status">Link exato do anuncio nao informado neste snapshot.</span><a class="button button-secondary" href="https://www.facebook.com/marketplace/search/?query=Chevrolet%20Caravan%201980" target="_blank" rel="noopener noreferrer">Abrir busca semelhante</a>
         </div>
       </article>
     
@@ -452,7 +470,7 @@
         </p>
 
         <div class="actions">
-          <a class="button" href="https://www.facebook.com/marketplace/search/?query=Ford%20Maverick%201976" target="_blank" rel="noopener noreferrer">Buscar no Marketplace</a>
+          <span class="link-status">Link exato do anuncio nao informado neste snapshot.</span><a class="button button-secondary" href="https://www.facebook.com/marketplace/search/?query=Ford%20Maverick%201976" target="_blank" rel="noopener noreferrer">Abrir busca semelhante</a>
         </div>
       </article>
     
@@ -497,7 +515,7 @@
         </p>
 
         <div class="actions">
-          <a class="button" href="https://www.facebook.com/marketplace/search/?query=Volkswagen%20Fusca%201984" target="_blank" rel="noopener noreferrer">Buscar no Marketplace</a>
+          <span class="link-status">Link exato do anuncio nao informado neste snapshot.</span><a class="button button-secondary" href="https://www.facebook.com/marketplace/search/?query=Volkswagen%20Fusca%201984" target="_blank" rel="noopener noreferrer">Abrir busca semelhante</a>
         </div>
       </article>
     

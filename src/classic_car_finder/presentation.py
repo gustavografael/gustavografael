@@ -15,22 +15,44 @@ def percent(value: Decimal) -> str:
     return f"{value:.2f}%".replace(".", ",")
 
 
+def is_exact_marketplace_item_url(url: str) -> bool:
+    return "/marketplace/item/" in url
+
+
+def render_link_action(url: str) -> str:
+    if not url:
+        return """
+          <span class="link-status">Link exato do anuncio nao informado.</span>
+          <span class="button button-disabled">Sem link</span>
+        """
+
+    safe_url = escape(url, quote=True)
+    if is_exact_marketplace_item_url(url):
+        return (
+            f'<a class="button" href="{safe_url}" target="_blank" '
+            'rel="noopener noreferrer">Ver anuncio exato</a>'
+        )
+
+    if "/marketplace/search/" in url:
+        return (
+            '<span class="link-status">'
+            'Link exato do anuncio nao informado neste snapshot.'
+            '</span>'
+            f'<a class="button button-secondary" href="{safe_url}" target="_blank" '
+            'rel="noopener noreferrer">Abrir busca semelhante</a>'
+        )
+
+    return (
+        f'<a class="button" href="{safe_url}" target="_blank" '
+        'rel="noopener noreferrer">Abrir link informado</a>'
+    )
+
+
 def render_opportunity_card(opportunity: Opportunity, position: int) -> str:
     safe_title = escape(opportunity.title)
     safe_location = escape(opportunity.location or "n/a")
     safe_year = escape(str(opportunity.year or "n/a"))
-    safe_url = escape(opportunity.url, quote=True)
-    button_label = (
-        "Buscar no Marketplace"
-        if "/marketplace/search/" in opportunity.url
-        else "Ver anuncio"
-    )
-    link = (
-        f'<a class="button" href="{safe_url}" target="_blank" '
-        f'rel="noopener noreferrer">{button_label}</a>'
-        if opportunity.url
-        else '<span class="button button-disabled">Sem link</span>'
-    )
+    link = render_link_action(opportunity.url)
 
     return f"""
       <article class="card">
@@ -269,8 +291,16 @@ def render_html_report(
     }}
 
     .actions {{
+      align-items: flex-start;
       display: flex;
+      flex-direction: column;
+      gap: 10px;
       margin-top: 20px;
+    }}
+
+    .link-status {{
+      color: var(--muted);
+      font-size: 0.92rem;
     }}
 
     .button {{
@@ -285,6 +315,16 @@ def render_html_report(
 
     .button:hover {{
       background: var(--primary-dark);
+    }}
+
+    .button-secondary {{
+      background: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }}
+
+    .button-secondary:hover {{
+      background: #f7eee6;
     }}
 
     .button-disabled {{

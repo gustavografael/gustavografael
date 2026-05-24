@@ -47,7 +47,7 @@ Campos aceitos:
 | `listing_id` | Nao | Identificador do anuncio. Se faltar, e gerado por URL/titulo/vendedor. |
 | `source` | Nao | Fonte do dado. Padrao: `facebook_marketplace`. |
 | `title` | Sim | Titulo do anuncio. |
-| `url` | Nao | Link do anuncio. |
+| `url` | Nao | Link exato do anuncio. Para abrir direto no carro, use uma URL real como `https://www.facebook.com/marketplace/item/...`. |
 | `price` | Sim | Preco anunciado. Aceita `45000` ou `R$ 45.000,00`. |
 | `year` | Sim | Ano do carro. |
 | `mileage` | Nao | Quilometragem. |
@@ -93,9 +93,10 @@ Gerando uma pagina HTML:
 classic-car-finder report --output reports/recommendations.html
 ```
 
-Abra o arquivo gerado no navegador. Quando o snapshot tiver um link real de
-anuncio, a recomendacao mostra o botao `Ver anuncio`. Quando o exemplo usa um
-link de busca do Marketplace, o botao aparece como `Buscar no Marketplace`.
+Abra o arquivo gerado no navegador. Quando o snapshot tiver uma URL real do item
+(`/marketplace/item/...`), a recomendacao mostra o botao `Ver anuncio exato`.
+Se o dado tiver apenas uma busca, a pagina avisa que o link exato nao foi
+informado e mostra `Abrir busca semelhante` como fallback.
 
 ## Exemplo rapido
 
@@ -108,6 +109,11 @@ PYTHONPATH=src python3 -m classic_car_finder.cli report --output examples/recomm
 Resultado esperado: a pagina lista seis carros antigos do exemplo que tiveram
 duas reducoes de preco e ficaram abaixo do valor de mercado informado. A pagina
 pronta para visualizacao fica em `examples/recommendations.html`.
+
+> Importante: a pagina so consegue abrir o anuncio exato quando o snapshot
+> contem a URL real do item. A imagem ou a busca do Marketplace nao fornecem o
+> identificador numerico do anuncio; esse link precisa ser copiado do proprio
+> card/anuncio no Facebook e salvo no campo `url`.
 
 ## Roadmap sugerido
 

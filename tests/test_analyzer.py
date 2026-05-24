@@ -79,7 +79,7 @@ class AnalyzerTest(unittest.TestCase):
         self.assertEqual(len(opportunities), 1)
         self.assertEqual(opportunities[0].listing_id, "civic")
 
-    def test_html_report_includes_recommendation_link(self):
+    def test_html_report_includes_exact_recommendation_link(self):
         snapshot = self.write_snapshot(
             [
                 "listing_id,title,url,price,year,market_value,captured_at",
@@ -104,11 +104,11 @@ class AnalyzerTest(unittest.TestCase):
 
         html = render_html_report(opportunities)
 
-        self.assertIn("Ver anuncio", html)
+        self.assertIn("Ver anuncio exato", html)
         self.assertIn('target="_blank"', html)
         self.assertIn("https://www.facebook.com/marketplace/item/opala", html)
 
-    def test_html_report_labels_marketplace_search_links(self):
+    def test_html_report_labels_marketplace_search_links_as_fallback(self):
         snapshot = self.write_snapshot(
             [
                 "listing_id,title,url,price,year,market_value,captured_at",
@@ -133,7 +133,9 @@ class AnalyzerTest(unittest.TestCase):
 
         html = render_html_report(opportunities)
 
-        self.assertIn("Buscar no Marketplace", html)
+        self.assertIn("Link exato do anuncio nao informado", html)
+        self.assertIn("Abrir busca semelhante", html)
+        self.assertNotIn("Ver anuncio exato", html)
         self.assertIn("/marketplace/search/?query=Chevrolet%20Opala%201978", html)
 
 
