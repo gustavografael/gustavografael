@@ -1,0 +1,22 @@
+listing_id,source,title,url,price,year,mileage,location,seller_name,market_value,captured_at
+opala-1978-sp,facebook_marketplace,Chevrolet Opala Comodoro 1978,https://www.facebook.com/marketplace/search/?query=Chevrolet%20Opala%20Comodoro%201978,45000,1978,98000,Sao Paulo SP,Joao,50000,2026-05-01T12:00:00Z
+opala-1978-sp,facebook_marketplace,Chevrolet Opala Comodoro 1978,https://www.facebook.com/marketplace/search/?query=Chevrolet%20Opala%20Comodoro%201978,42000,1978,98000,Sao Paulo SP,Joao,50000,2026-05-10T12:00:00Z
+opala-1978-sp,facebook_marketplace,Chevrolet Opala Comodoro 1978,https://www.facebook.com/marketplace/search/?query=Chevrolet%20Opala%20Comodoro%201978,38000,1978,98000,Sao Paulo SP,Joao,50000,2026-05-20T12:00:00Z
+fusca-1984-rj,facebook_marketplace,Volkswagen Fusca 1984,https://www.facebook.com/marketplace/search/?query=Volkswagen%20Fusca%201984,29000,1984,120000,Rio de Janeiro RJ,Maria,36000,2026-05-01T12:00:00Z
+fusca-1984-rj,facebook_marketplace,Volkswagen Fusca 1984,https://www.facebook.com/marketplace/search/?query=Volkswagen%20Fusca%201984,28200,1984,120000,Rio de Janeiro RJ,Maria,36000,2026-05-10T12:00:00Z
+fusca-1984-rj,facebook_marketplace,Volkswagen Fusca 1984,https://www.facebook.com/marketplace/search/?query=Volkswagen%20Fusca%201984,27500,1984,120000,Rio de Janeiro RJ,Maria,36000,2026-05-20T12:00:00Z
+maverick-1976-pr,facebook_marketplace,Ford Maverick Super 1976,https://www.facebook.com/marketplace/search/?query=Ford%20Maverick%201976,68000,1976,87000,Curitiba PR,Roberto,74000,2026-05-01T12:00:00Z
+maverick-1976-pr,facebook_marketplace,Ford Maverick Super 1976,https://www.facebook.com/marketplace/search/?query=Ford%20Maverick%201976,63500,1976,87000,Curitiba PR,Roberto,74000,2026-05-10T12:00:00Z
+maverick-1976-pr,facebook_marketplace,Ford Maverick Super 1976,https://www.facebook.com/marketplace/search/?query=Ford%20Maverick%201976,59000,1976,87000,Curitiba PR,Roberto,74000,2026-05-20T12:00:00Z
+chevette-1987-mg,facebook_marketplace,Chevrolet Chevette SL 1987,https://www.facebook.com/marketplace/search/?query=Chevrolet%20Chevette%201987,22000,1987,110000,Belo Horizonte MG,Ana,24000,2026-05-01T12:00:00Z
+chevette-1987-mg,facebook_marketplace,Chevrolet Chevette SL 1987,https://www.facebook.com/marketplace/search/?query=Chevrolet%20Chevette%201987,20500,1987,110000,Belo Horizonte MG,Ana,24000,2026-05-10T12:00:00Z
+chevette-1987-mg,facebook_marketplace,Chevrolet Chevette SL 1987,https://www.facebook.com/marketplace/search/?query=Chevrolet%20Chevette%201987,18500,1987,110000,Belo Horizonte MG,Ana,24000,2026-05-20T12:00:00Z
+brasilia-1978-sc,facebook_marketplace,Volkswagen Brasilia 1978,https://www.facebook.com/marketplace/search/?query=Volkswagen%20Brasilia%201978,26000,1978,93000,Florianopolis SC,Pedro,31000,2026-05-01T12:00:00Z
+brasilia-1978-sc,facebook_marketplace,Volkswagen Brasilia 1978,https://www.facebook.com/marketplace/search/?query=Volkswagen%20Brasilia%201978,24500,1978,93000,Florianopolis SC,Pedro,31000,2026-05-10T12:00:00Z
+brasilia-1978-sc,facebook_marketplace,Volkswagen Brasilia 1978,https://www.facebook.com/marketplace/search/?query=Volkswagen%20Brasilia%201978,22500,1978,93000,Florianopolis SC,Pedro,31000,2026-05-20T12:00:00Z
+caravan-1980-rs,facebook_marketplace,Chevrolet Caravan 1980,https://www.facebook.com/marketplace/search/?query=Chevrolet%20Caravan%201980,41000,1980,102000,Porto Alegre RS,Lucia,48000,2026-05-01T12:00:00Z
+caravan-1980-rs,facebook_marketplace,Chevrolet Caravan 1980,https://www.facebook.com/marketplace/search/?query=Chevrolet%20Caravan%201980,39000,1980,102000,Porto Alegre RS,Lucia,48000,2026-05-10T12:00:00Z
+caravan-1980-rs,facebook_marketplace,Chevrolet Caravan 1980,https://www.facebook.com/marketplace/search/?query=Chevrolet%20Caravan%201980,36000,1980,102000,Porto Alegre RS,Lucia,48000,2026-05-20T12:00:00Z
+civic-2012-mg,facebook_marketplace,Honda Civic 2012,https://www.facebook.com/marketplace/search/?query=Honda%20Civic%202012,52000,2012,85000,Belo Horizonte MG,Carlos,58000,2026-05-01T12:00:00Z
+civic-2012-mg,facebook_marketplace,Honda Civic 2012,https://www.facebook.com/marketplace/search/?query=Honda%20Civic%202012,50000,2012,85000,Belo Horizonte MG,Carlos,58000,2026-05-10T12:00:00Z
+civic-2012-mg,facebook_marketplace,Honda Civic 2012,https://www.facebook.com/marketplace/search/?query=Honda%20Civic%202012,47000,2012,85000,Belo Horizonte MG,Carlos,58000,2026-05-20T12:00:00Z

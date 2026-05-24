@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "classic-car-finder"
+version = "0.1.0"
+description = "Detecta oportunidades de compra de carros antigos com quedas recorrentes de preco."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Gustavo Rafael" }]
+dependencies = []
+
+[project.scripts]
+classic-car-finder = "classic_car_finder.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
