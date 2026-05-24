@@ -20,9 +20,14 @@ def render_opportunity_card(opportunity: Opportunity, position: int) -> str:
     safe_location = escape(opportunity.location or "n/a")
     safe_year = escape(str(opportunity.year or "n/a"))
     safe_url = escape(opportunity.url, quote=True)
+    button_label = (
+        "Buscar no Marketplace"
+        if "/marketplace/search/" in opportunity.url
+        else "Ver anuncio"
+    )
     link = (
         f'<a class="button" href="{safe_url}" target="_blank" '
-        'rel="noopener noreferrer">Ver anuncio</a>'
+        f'rel="noopener noreferrer">{button_label}</a>'
         if opportunity.url
         else '<span class="button button-disabled">Sem link</span>'
     )

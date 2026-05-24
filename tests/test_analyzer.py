@@ -108,6 +108,34 @@ class AnalyzerTest(unittest.TestCase):
         self.assertIn('target="_blank"', html)
         self.assertIn("https://www.facebook.com/marketplace/item/opala", html)
 
+    def test_html_report_labels_marketplace_search_links(self):
+        snapshot = self.write_snapshot(
+            [
+                "listing_id,title,url,price,year,market_value,captured_at",
+                (
+                    "opala,Chevrolet Opala 1978,"
+                    "https://www.facebook.com/marketplace/search/?query=Chevrolet%20Opala%201978,"
+                    "45000,1978,50000,2026-05-01T12:00:00Z"
+                ),
+                (
+                    "opala,Chevrolet Opala 1978,"
+                    "https://www.facebook.com/marketplace/search/?query=Chevrolet%20Opala%201978,"
+                    "42000,1978,50000,2026-05-10T12:00:00Z"
+                ),
+                (
+                    "opala,Chevrolet Opala 1978,"
+                    "https://www.facebook.com/marketplace/search/?query=Chevrolet%20Opala%201978,"
+                    "38000,1978,50000,2026-05-20T12:00:00Z"
+                ),
+            ]
+        )
+        opportunities = find_opportunities(read_snapshot_file(snapshot))
+
+        html = render_html_report(opportunities)
+
+        self.assertIn("Buscar no Marketplace", html)
+        self.assertIn("/marketplace/search/?query=Chevrolet%20Opala%201978", html)
+
 
 if __name__ == "__main__":
     unittest.main()

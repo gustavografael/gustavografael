@@ -93,8 +93,9 @@ Gerando uma pagina HTML:
 classic-car-finder report --output reports/recommendations.html
 ```
 
-Abra o arquivo gerado no navegador. Cada recomendacao com URL tem um botao
-`Ver anuncio` para entrar direto no carro.
+Abra o arquivo gerado no navegador. Quando o snapshot tiver um link real de
+anuncio, a recomendacao mostra o botao `Ver anuncio`. Quando o exemplo usa um
+link de busca do Marketplace, o botao aparece como `Buscar no Marketplace`.
 
 ## Exemplo rapido
 
@@ -104,9 +105,9 @@ PYTHONPATH=src python3 -m classic_car_finder.cli analyze
 PYTHONPATH=src python3 -m classic_car_finder.cli report --output examples/recommendations.html
 ```
 
-Resultado esperado: o Opala 1978 do exemplo aparece porque teve duas reducoes
-de preco e ficou abaixo do valor de mercado informado. A pagina pronta para
-visualizacao fica em `examples/recommendations.html`.
+Resultado esperado: a pagina lista seis carros antigos do exemplo que tiveram
+duas reducoes de preco e ficaram abaixo do valor de mercado informado. A pagina
+pronta para visualizacao fica em `examples/recommendations.html`.
 
 ## Roadmap sugerido
 
