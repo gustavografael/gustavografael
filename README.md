@@ -2,7 +2,15 @@
 
 Dashboard estática e interativa para explicar a jornada de um pacote pela rede.
 
-## Acesso público
+## Preview público imediato
+
+Enquanto o GitHub Pages oficial não estiver habilitado, use este preview público:
+
+https://rawcdn.githack.com/gustavografael/gustavografael/6ecb7ff8a4f30919caef0806242c3c7b232c87f9/index.html
+
+Esse link usa os arquivos HTML, CSS e JS armazenados neste repositório no GitHub.
+
+## GitHub Pages oficial
 
 Quando o GitHub Pages estiver habilitado para este repositório e esta alteração
 estiver na branch `main`, a página ficará disponível em:
