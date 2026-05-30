@@ -68,6 +68,32 @@ npm run dev
 
 O frontend roda em `http://localhost:5173` e o backend em `http://localhost:3001`.
 
+## Publicação no GitHub Pages
+
+O frontend está preparado para publicação pública no GitHub Pages pelo workflow:
+
+```text
+.github/workflows/deploy-pages.yml
+```
+
+URL pública esperada após o deploy:
+
+```text
+https://gustavografael.github.io/gustavografael/
+```
+
+Observação importante:
+
+- GitHub Pages hospeda apenas o frontend estático.
+- Os botões que executam SSH precisam do backend Node.js publicado em outro serviço, como Render, Railway, Fly.io, Azure App Service ou Azure Container Apps.
+- Quando o backend tiver uma URL pública, configure a variável do repositório `NETGUARDIAN_API_BASE_URL` com a URL base do backend, por exemplo:
+
+```text
+https://netguardian-api.exemplo.com
+```
+
+Sem essa variável, o frontend tenta usar `/api` no mesmo domínio do GitHub Pages, o que serve apenas para demonstração visual da interface.
+
 ## Variáveis de ambiente do backend
 
 Copie `backend/.env.example` para `backend/.env` se quiser ajustar:
