@@ -82,6 +82,12 @@ URL pública esperada após o deploy:
 https://gustavografael.github.io/gustavografael/
 ```
 
+O workflow publica automaticamente quando as mudanças estiverem na branch `main`. Se o GitHub Pages ainda não estiver habilitado no repositório, habilite uma vez em:
+
+```text
+Settings > Pages > Build and deployment > Source: GitHub Actions
+```
+
 Observação importante:
 
 - GitHub Pages hospeda apenas o frontend estático.
