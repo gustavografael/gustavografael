@@ -83,8 +83,30 @@
             </button>
           </div>
 
+          <article class="network-info" id="network-info" aria-live="polite">
+            <div class="network-info__header">
+              <h3>Seu endereço de rede</h3>
+              <button class="ghost-button ghost-button--compact" type="button" id="detect-ip-button">
+                Detectar IP
+              </button>
+            </div>
+            <dl class="network-info__grid">
+              <div>
+                <dt>IP local</dt>
+                <dd id="local-ip">Detectando...</dd>
+              </div>
+              <div>
+                <dt>IP público</dt>
+                <dd id="public-ip">Detectando...</dd>
+              </div>
+            </dl>
+            <p class="network-info__note" id="network-info-note">
+              O IP local vem da sua máquina na rede. O IP público é o endereço visto na internet.
+            </p>
+          </article>
+
           <p class="hint">
-            Dica: clique em uma peça ou arraste para o campo correspondente.
+            Dica: clique em uma peça, arraste para o campo ou digite o IP e clique em Testar IP.
           </p>
 
           <form class="packet-form" id="packet-form">
@@ -110,17 +132,29 @@
               <legend>IP <span>Camada 3</span></legend>
               <label>
                 IP Origem
-                <input name="ipOrigem" value="192.168.1.10" autocomplete="off" />
+                <div class="field-row">
+                  <input name="ipOrigem" id="ip-origem" value="192.168.1.10" autocomplete="off" />
+                  <button class="ghost-button ghost-button--compact" type="button" id="use-local-ip">
+                    Usar meu IP
+                  </button>
+                </div>
+                <small class="field-feedback" id="ip-origem-feedback"></small>
               </label>
               <label>
                 IP Destino
-                <input
-                  id="ip-destino"
-                  name="ipDestino"
-                  class="drop-field"
-                  placeholder="solte IP destino aqui"
-                  autocomplete="off"
-                />
+                <div class="field-row">
+                  <input
+                    id="ip-destino"
+                    name="ipDestino"
+                    class="drop-field"
+                    placeholder="ex.: 8.8.8.8"
+                    autocomplete="off"
+                  />
+                  <button class="ghost-button ghost-button--compact" type="button" id="test-ip-button">
+                    Testar IP
+                  </button>
+                </div>
+                <small class="field-feedback" id="ip-destino-feedback"></small>
               </label>
               <label>
                 TTL
@@ -190,7 +224,7 @@
             <article class="node node--active" data-node="0">
               <span class="node__icon">💻</span>
               <h3>Seu Computador</h3>
-              <p>192.168.1.10</p>
+              <p id="node-local-ip">192.168.1.10</p>
             </article>
             <article class="node" data-node="1">
               <span class="node__icon">▰</span>
@@ -220,7 +254,7 @@
             <article class="node" data-node="6">
               <span class="node__icon">☁️</span>
               <h3>Servidor</h3>
-              <p>8.8.8.8</p>
+              <p id="node-dest-ip">8.8.8.8</p>
             </article>
           </div>
 
