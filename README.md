@@ -6,7 +6,7 @@ Dashboard estática e interativa para explicar a jornada de um pacote pela rede.
 
 Enquanto o GitHub Pages oficial não estiver habilitado, use este preview público:
 
-https://rawcdn.githack.com/gustavografael/gustavografael/6ecb7ff8a4f30919caef0806242c3c7b232c87f9/index.html
+https://rawcdn.githack.com/gustavografael/gustavografael/fd99bb8e5a387985a233b0025b878879383e3acb/index.html
 
 Esse link usa os arquivos HTML, CSS e JS armazenados neste repositório no GitHub.
 
@@ -27,3 +27,9 @@ Abra `index.html` no navegador ou sirva a pasta com:
 ```bash
 python3 -m http.server 8000
 ```
+
+## Recursos
+
+- Detecta automaticamente o IP local e o IP público do usuário.
+- Botão **Testar IP** valida o destino e mostra informações da rota.
+
