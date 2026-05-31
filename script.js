@@ -7,11 +7,14 @@ const progressLabel = document.querySelector("#progress-label");
 const packetStatus = document.querySelector("#packet-status");
 const score = document.querySelector("#score");
 const resetButton = document.querySelector("#reset-button");
+const autoSendButton = document.querySelector("#auto-send-button");
+const sendButton = document.querySelector("#send-button");
 const viewToggle = document.querySelector("#view-toggle");
 const networkMap = document.querySelector("#network-map");
 const natBefore = document.querySelector("#nat-before");
 const natAfter = document.querySelector("#nat-after");
 const nodes = [...document.querySelectorAll(".node")];
+const steps = [...document.querySelectorAll(".steps__item")];
 const localIpDisplay = document.querySelector("#local-ip");
 const publicIpDisplay = document.querySelector("#public-ip");
 const networkInfoNote = document.querySelector("#network-info-note");
@@ -24,6 +27,14 @@ const ipOrigemFeedback = document.querySelector("#ip-origem-feedback");
 const ipDestinoFeedback = document.querySelector("#ip-destino-feedback");
 const nodeLocalIp = document.querySelector("#node-local-ip");
 const nodeDestIp = document.querySelector("#node-dest-ip");
+const packetReadiness = document.querySelector("#packet-readiness");
+
+const fieldLabels = {
+  "mac-destino": "MAC destino",
+  "ip-destino": "IP destino",
+  ttl: "TTL",
+  porta: "Porta TCP",
+};
 
 const route = [
   {
@@ -69,6 +80,7 @@ const networkState = {
 };
 
 let activeTimer = null;
+let journeyRunning = false;
 
 function now() {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -118,6 +130,44 @@ function markFieldFilled(field) {
   field.classList.toggle("is-filled", Boolean(field.value.trim()));
 }
 
+function getMissingFields() {
+  return dropFields.filter((field) => !field.value.trim());
+}
+
+function updateReadiness() {
+  if (journeyRunning) {
+    packetReadiness.textContent = "Pacote em trânsito. Acompanhe a rota à direita.";
+    packetReadiness.classList.add("is-running");
+    packetReadiness.classList.remove("is-ready");
+    return;
+  }
+
+  const missing = getMissingFields();
+  packetReadiness.classList.remove("is-running");
+
+  if (!missing.length) {
+    packetReadiness.textContent = "Tudo pronto. Clique em Montar e enviar ou Enviar pacote.";
+    packetReadiness.classList.add("is-ready");
+    autoSendButton.classList.add("primary-button--pulse");
+    return;
+  }
+
+  const names = missing.map((field) => fieldLabels[field.id] || field.id).join(", ");
+  packetReadiness.textContent =
+    missing.length === 1
+      ? `Falta 1 campo: ${names}.`
+      : `Faltam ${missing.length} campos: ${names}.`;
+  packetReadiness.classList.remove("is-ready");
+  autoSendButton.classList.toggle("primary-button--pulse", missing.length <= 2);
+}
+
+function updateSteps(activeStep) {
+  steps.forEach((step, index) => {
+    step.classList.toggle("steps__item--active", index === activeStep);
+    step.classList.toggle("steps__item--done", index < activeStep);
+  });
+}
+
 function setPieceUsed(target, used) {
   const piece = pieces.find((button) => button.dataset.target === target);
   if (piece) {
@@ -125,7 +175,7 @@ function setPieceUsed(target, used) {
   }
 }
 
-function fillField(target, value) {
+function fillField(target, value, { testIp = true } = {}) {
   const field = document.querySelector(`#${target}`);
   if (!field) return;
 
@@ -135,12 +185,32 @@ function fillField(target, value) {
 
   if (target === "ip-destino") {
     nodeDestIp.textContent = value;
-    testDestinationIp({ silent: false });
+    if (testIp) {
+      testDestinationIp({ silent: true });
+    }
   }
+
+  updateReadiness();
+}
+
+function autoFillMissingFields() {
+  pieces.forEach((piece) => {
+    const field = document.querySelector(`#${piece.dataset.target}`);
+    if (field && !field.value.trim()) {
+      fillField(piece.dataset.target, piece.dataset.value, { testIp: false });
+    }
+  });
+
+  if (!ipDestinoInput.value.trim()) {
+    fillField("ip-destino", "8.8.8.8", { testIp: false });
+  }
+
+  updateReadiness();
+  addLog("Campos restantes preenchidos automaticamente.");
 }
 
 function validatePacket() {
-  const missingFields = dropFields.filter((field) => !field.value.trim());
+  const missingFields = getMissingFields();
   dropFields.forEach((field) => markFieldFilled(field));
 
   if (!missingFields.length) return true;
@@ -149,7 +219,10 @@ function validatePacket() {
     field.classList.remove("shake");
     window.requestAnimationFrame(() => field.classList.add("shake"));
   });
-  addLog("Complete todos os campos com borda antes de enviar.");
+
+  const names = missingFields.map((field) => fieldLabels[field.id]).join(", ");
+  addLog(`Complete os campos faltantes antes de enviar: ${names}.`);
+  updateReadiness();
   return false;
 }
 
@@ -175,6 +248,12 @@ function clearAnimation() {
 
 function animateJourney() {
   clearAnimation();
+  journeyRunning = true;
+  updateSteps(2);
+  updateReadiness();
+  autoSendButton.disabled = true;
+  sendButton.disabled = true;
+
   packet.classList.add("is-visible");
   let stepIndex = 0;
 
@@ -187,8 +266,14 @@ function animateJourney() {
 
     if (stepIndex >= route.length) {
       clearAnimation();
+      journeyRunning = false;
       packetStatus.textContent = "Pacote entregue";
       score.textContent = "100";
+      progressLabel.textContent = "100%";
+      updateSteps(3);
+      autoSendButton.disabled = false;
+      sendButton.disabled = false;
+      updateReadiness();
       addLog("Resposta pronta para voltar pela rota de retorno.");
       return;
     }
@@ -204,7 +289,7 @@ async function detectLocalIp() {
 
   return new Promise((resolve) => {
     const candidates = new Set();
-    const pc = new RTCPeerConnection({ iceServers: [] });
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
     pc.createDataChannel("probe");
     pc.onicecandidate = (event) => {
       if (!event.candidate?.candidate) return;
@@ -224,7 +309,7 @@ async function detectLocalIp() {
     window.setTimeout(() => {
       pc.close();
       resolve([...candidates][0] || null);
-    }, 2500);
+    }, 3500);
   });
 }
 
@@ -243,15 +328,24 @@ async function lookupIp(ip) {
   return data;
 }
 
+function resolveLocalIpDisplay(localIp) {
+  const originIp = ipOrigemInput.value.trim();
+  if (localIp) return localIp;
+  if (isValidIpv4(originIp) && isPrivateIpv4(originIp)) {
+    return `${originIp} (origem)`;
+  }
+  return "Não detectado";
+}
+
 function applyDetectedIps({ localIp, publicIp, announce = true }) {
-  networkState.localIp = localIp;
+  networkState.localIp = localIp || (isPrivateIpv4(ipOrigemInput.value.trim()) ? ipOrigemInput.value.trim() : null);
   networkState.publicIp = publicIp;
 
-  localIpDisplay.textContent = localIp || "Não detectado";
+  localIpDisplay.textContent = resolveLocalIpDisplay(localIp);
   publicIpDisplay.textContent = publicIp || "Não detectado";
 
-  if (localIp) {
-    nodeLocalIp.textContent = localIp;
+  if (networkState.localIp) {
+    nodeLocalIp.textContent = networkState.localIp;
   }
 
   if (announce) {
@@ -259,6 +353,9 @@ function applyDetectedIps({ localIp, publicIp, announce = true }) {
       addLog(`Rede detectada: local ${localIp}, público ${publicIp}.`);
     } else if (publicIp) {
       addLog(`IP público detectado: ${publicIp}.`);
+      if (!localIp && networkState.localIp) {
+        addLog(`Usando ${networkState.localIp} como IP local de origem.`);
+      }
     } else if (localIp) {
       addLog(`IP local detectado: ${localIp}.`);
     }
@@ -289,18 +386,19 @@ async function detectNetworkIps({ announce = true } = {}) {
 
   if (!localIp && !publicIp) {
     networkInfoNote.textContent =
-      "Não foi possível detectar automaticamente. Digite o IP manualmente ou tente novamente.";
+      "Não foi possível detectar automaticamente. Use Montar e enviar ou preencha manualmente.";
     if (announce) addLog("Falha ao detectar IP automaticamente.");
     return;
   }
 
   networkInfoNote.textContent =
-    "Use “Usar meu IP” para preencher a origem com o IP local detectado.";
+    'Clique em "Montar e enviar pacote" para iniciar a simulação com um clique.';
 
-  if (localIp && !ipOrigemInput.dataset.userEdited) {
-    ipOrigemInput.value = localIp;
-    nodeLocalIp.textContent = localIp;
-    setFeedback(ipOrigemFeedback, `Origem atualizada para ${localIp}.`, "is-ok");
+  if ((localIp || networkState.localIp) && !ipOrigemInput.dataset.userEdited) {
+    const origin = localIp || networkState.localIp;
+    ipOrigemInput.value = origin;
+    nodeLocalIp.textContent = origin;
+    setFeedback(ipOrigemFeedback, `Origem atualizada para ${origin}.`, "is-ok");
   }
 }
 
@@ -315,8 +413,11 @@ function useLocalIp() {
   ipOrigemInput.value = ip;
   ipOrigemInput.dataset.userEdited = "true";
   nodeLocalIp.textContent = ip;
+  networkState.localIp = ip;
+  localIpDisplay.textContent = ip;
   setFeedback(ipOrigemFeedback, `Origem definida como ${ip}.`, "is-ok");
   addLog(`IP de origem definido como ${ip}.`);
+  updateReadiness();
 }
 
 async function testDestinationIp({ silent = false } = {}) {
@@ -350,36 +451,75 @@ async function testDestinationIp({ silent = false } = {}) {
     let message = `IP ${ip} válido (${scope}).`;
     if (lookup.org) message += ` Operador: ${lookup.org}.`;
     if (lookup.city && lookup.country_name) {
-      message += ` Localização aproximada: ${lookup.city}, ${lookup.country_name}.`;
+      message += ` Localização: ${lookup.city}, ${lookup.country_name}.`;
     }
     if (sameAsPublic) message += " Este é o seu IP público.";
     if (sameAsLocal) message += " Este é o IP local da sua máquina.";
 
-    setFeedback(ipDestinoFeedback, message, "is-ok");
-    addLog(`Teste de IP concluído para ${ip}.`);
+    setFeedback(ipDestinoFeedback, `${message} Agora clique em Montar e enviar.`, "is-ok");
+    if (!silent) addLog(`Teste de IP concluído para ${ip}.`);
+    autoFillMissingFields();
+    updateReadiness();
     return true;
   } catch {
-    const scope = isPrivateIpv4(ip) ? "rede local" : "internet";
     nodeDestIp.textContent = ip;
 
     if (isPrivateIpv4(ip)) {
-      const message = `IP ${ip} válido (${scope}). Consulta externa indisponível para endereços privados.`;
+      const message = `IP ${ip} válido (rede local). Clique em Montar e enviar para continuar.`;
       setFeedback(ipDestinoFeedback, message, "is-ok");
-      addLog(`IP privado ${ip} aceito para teste local.`);
+      if (!silent) addLog(`IP privado ${ip} aceito para teste local.`);
+      autoFillMissingFields();
+      updateReadiness();
       return true;
     }
 
     setFeedback(
       ipDestinoFeedback,
-      `IP ${ip} parece válido, mas a consulta externa falhou. Você ainda pode enviar o pacote.`,
-      "is-error",
+      `IP ${ip} válido. Consulta externa falhou, mas você pode enviar o pacote.`,
+      "is-ok",
     );
     if (!silent) addLog(`Não foi possível consultar detalhes do IP ${ip}.`);
+    autoFillMissingFields();
+    updateReadiness();
     return true;
   } finally {
     testIpButton.disabled = false;
     testIpButton.textContent = "Testar IP";
   }
+}
+
+async function sendPacket({ autoFill = false } = {}) {
+  if (journeyRunning) {
+    addLog("Aguarde a viagem atual terminar ou clique em Reiniciar.");
+    return;
+  }
+
+  if (autoFill) {
+    autoFillMissingFields();
+  }
+
+  if (!validatePacket()) return;
+
+  updateSteps(1);
+
+  const destinationOk = await testDestinationIp({ silent: true });
+  if (!destinationOk) return;
+
+  const data = new FormData(form);
+  const localAddress = `${data.get("ipOrigem")}:${Math.floor(50000 + Math.random() * 9999)}`;
+  const publicAddress = networkState.publicIp
+    ? `${networkState.publicIp}:${Math.floor(62000 + Math.random() * 999)}`
+    : `189.XX.XX.25:${Math.floor(62000 + Math.random() * 999)}`;
+
+  natBefore.textContent = localAddress;
+  natAfter.textContent = publicAddress;
+  score.textContent = "0";
+  progressLabel.textContent = "0%";
+  packetStatus.textContent = "Pacote em trânsito";
+  addLog(
+    `Enviando ${data.get("protocolo")} para ${data.get("ipDestino")}:${data.get("porta")} com TTL ${data.get("ttl")}.`,
+  );
+  animateJourney();
 }
 
 pieces.forEach((piece) => {
@@ -428,6 +568,7 @@ dropFields.forEach((field) => {
     if (field.id === "ip-destino") {
       nodeDestIp.textContent = field.value.trim() || "8.8.8.8";
     }
+    updateReadiness();
   });
 });
 
@@ -438,14 +579,21 @@ ipOrigemInput.addEventListener("input", () => {
 
   if (!ip) {
     setFeedback(ipOrigemFeedback, "", "");
+    updateReadiness();
     return;
   }
 
   if (isValidIpv4(ip)) {
     setFeedback(ipOrigemFeedback, `IP de origem válido: ${ip}.`, "is-ok");
+    if (isPrivateIpv4(ip)) {
+      networkState.localIp = ip;
+      localIpDisplay.textContent = `${ip} (origem)`;
+    }
   } else {
     setFeedback(ipOrigemFeedback, "Digite um IPv4 válido, por exemplo 192.168.1.10.", "is-error");
   }
+
+  updateReadiness();
 });
 
 ipDestinoInput.addEventListener("keydown", (event) => {
@@ -458,34 +606,15 @@ ipDestinoInput.addEventListener("keydown", (event) => {
 detectIpButton.addEventListener("click", () => detectNetworkIps({ announce: true }));
 useLocalIpButton.addEventListener("click", useLocalIp);
 testIpButton.addEventListener("click", () => testDestinationIp());
-
-form.addEventListener("submit", async (event) => {
+autoSendButton.addEventListener("click", () => sendPacket({ autoFill: true }));
+form.addEventListener("submit", (event) => {
   event.preventDefault();
-
-  if (!validatePacket()) return;
-
-  const destinationOk = await testDestinationIp({ silent: true });
-  if (!destinationOk) return;
-
-  const data = new FormData(form);
-  const localAddress = `${data.get("ipOrigem")}:${Math.floor(50000 + Math.random() * 9999)}`;
-  const publicAddress = networkState.publicIp
-    ? `${networkState.publicIp}:${Math.floor(62000 + Math.random() * 999)}`
-    : `189.XX.XX.25:${Math.floor(62000 + Math.random() * 999)}`;
-
-  natBefore.textContent = localAddress;
-  natAfter.textContent = publicAddress;
-  score.textContent = "0";
-  progressLabel.textContent = "0%";
-  packetStatus.textContent = "Pacote em trânsito";
-  addLog(
-    `Enviando ${data.get("protocolo")} para ${data.get("ipDestino")}:${data.get("porta")} com TTL ${data.get("ttl")}.`,
-  );
-  animateJourney();
+  sendPacket({ autoFill: false });
 });
 
 resetButton.addEventListener("click", () => {
   clearAnimation();
+  journeyRunning = false;
   form.reset();
   delete ipOrigemInput.dataset.userEdited;
   form.elements.macOrigem.value = "11:22:33:44:55:66";
@@ -505,6 +634,10 @@ resetButton.addEventListener("click", () => {
   setFeedback(ipOrigemFeedback, "", "");
   setFeedback(ipDestinoFeedback, "", "");
   nodeDestIp.textContent = "8.8.8.8";
+  autoSendButton.disabled = false;
+  sendButton.disabled = false;
+  updateSteps(0);
+  updateReadiness();
   detectNetworkIps({ announce: false });
 });
 
@@ -514,3 +647,4 @@ viewToggle.addEventListener("click", () => {
 });
 
 detectNetworkIps({ announce: true });
+updateReadiness();

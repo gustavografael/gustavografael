@@ -106,7 +106,8 @@
           </article>
 
           <p class="hint">
-            Dica: clique em uma peça, arraste para o campo ou digite o IP e clique em Testar IP.
+            Dica: clique em <strong>Montar e enviar</strong> para preencher tudo e iniciar a
+            simulação automaticamente.
           </p>
 
           <form class="packet-form" id="packet-form">
@@ -190,8 +191,15 @@
               </label>
             </fieldset>
 
+            <p class="packet-readiness" id="packet-readiness" aria-live="polite">
+              Faltam 4 campos para iniciar a viagem do pacote.
+            </p>
+
             <div class="form-actions">
-              <button class="primary-button" type="submit">Enviar pacote</button>
+              <button class="primary-button primary-button--pulse" type="button" id="auto-send-button">
+                Montar e enviar pacote
+              </button>
+              <button class="ghost-button" type="submit" id="send-button">Enviar pacote</button>
               <button class="ghost-button" type="button" id="reset-button">Reiniciar</button>
             </div>
           </form>

@@ -469,9 +469,51 @@ input::placeholder {
   border-color: rgba(74, 222, 128, 0.5);
 }
 
+.packet-readiness {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  background: rgba(139, 92, 246, 0.1);
+  color: #d4cff8;
+  font-size: 0.88rem;
+}
+
+.packet-readiness.is-ready {
+  border-color: rgba(74, 222, 128, 0.45);
+  background: rgba(74, 222, 128, 0.1);
+  color: #b8ffd3;
+}
+
+.packet-readiness.is-running {
+  border-color: rgba(67, 215, 255, 0.45);
+  background: rgba(67, 215, 255, 0.1);
+  color: #c8f8ff;
+}
+
+.primary-button--pulse {
+  animation: pulseGlow 1.6s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(139, 92, 246, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 28px rgba(139, 92, 246, 0.55);
+  }
+}
+
+.steps__item--done span {
+  background: rgba(74, 222, 128, 0.25);
+  border-color: rgba(74, 222, 128, 0.55);
+}
+
 .form-actions {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1.4fr 1fr 1fr;
   gap: 10px;
   margin-top: 2px;
 }
@@ -798,9 +840,12 @@ input::placeholder {
 
   .score-card,
   .piece-tray,
-  .form-actions,
   .insights-grid,
   .layer-explain ul {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
     grid-template-columns: 1fr;
   }
 
