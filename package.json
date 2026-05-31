@@ -9,8 +9,10 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
-    "dev:local": "concurrently \"npm run agent -w backend\" \"npm run dev -w frontend\"",
+    "dev:local": "concurrently -n agent,ui -c magenta,cyan \"npm run agent -w backend\" \"npm run dev -w frontend\"",
+    "ui": "npm run dev -w frontend",
     "agent": "npm run agent -w backend",
+    "start:local": "node scripts/start-local.mjs",
     "build": "npm run build -w frontend",
     "start": "npm run start -w backend",
     "test:local": "node scripts/smoke-local-agent.mjs"

@@ -9,12 +9,20 @@ export default defineConfig({
   base: process.env.VITE_BASE_PATH || githubPagesBase,
   plugins: [react(), tailwindcss()],
   server: {
+    host: true,
     port: 5173,
+    strictPort: true,
+    open: false,
     proxy: {
       "/api": {
         target: "http://localhost:3001",
         changeOrigin: true
       }
     }
+  },
+  preview: {
+    host: true,
+    port: 5173,
+    strictPort: true
   }
 });

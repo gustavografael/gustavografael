@@ -103,8 +103,19 @@ http://127.0.0.1:3737
 Para testar UI + agente juntos:
 
 ```bash
-npm run dev:local
+npm run start:local
 ```
+
+Ou, em dois terminais separados:
+
+```bash
+npm run agent      # terminal 1 — porta 3737
+npm run ui         # terminal 2 — porta 5173
+```
+
+Depois abra **http://localhost:5173** no navegador.
+
+Se aparecer `ERR_CONNECTION_REFUSED`, a UI não está rodando — execute `npm run start:local` na pasta do projeto.
 
 Com o agente rodando, valide a instalação local:
 
