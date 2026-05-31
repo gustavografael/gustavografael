@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+backend/data/history.json
+backend/data/tac-packages/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
