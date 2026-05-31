@@ -106,6 +106,12 @@ Para testar UI + agente juntos:
 npm run dev:local
 ```
 
+Com o agente rodando, valide a instalação local:
+
+```bash
+npm run test:local
+```
+
 A interface mostra um banner verde quando o agente local está conectado. Sem o agente, os botões SSH não funcionam na UI pública.
 
 Observações:

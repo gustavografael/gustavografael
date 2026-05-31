@@ -12,7 +12,8 @@
     "dev:local": "concurrently \"npm run agent -w backend\" \"npm run dev -w frontend\"",
     "agent": "npm run agent -w backend",
     "build": "npm run build -w frontend",
-    "start": "npm run start -w backend"
+    "start": "npm run start -w backend",
+    "test:local": "node scripts/smoke-local-agent.mjs"
   },
   "devDependencies": {
     "concurrently": "latest"
