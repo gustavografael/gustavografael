@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev:local": "concurrently \"npm run agent -w backend\" \"npm run dev -w frontend\"",
+    "agent": "npm run agent -w backend",
     "build": "npm run build -w frontend",
     "start": "npm run start -w backend"
   },

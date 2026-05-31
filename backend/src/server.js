@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import os from "node:os";
 import { randomUUID } from "node:crypto";
 import { NodeSSH } from "node-ssh";
 import { z } from "zod";
@@ -12,7 +13,41 @@ import { applyRoutingPlan, createRoutingPreview } from "./routingValidator.js";
 import { generateTacPackage, getTacPackage } from "./tacPackage.js";
 
 const app = express();
-const port = Number(process.env.PORT ?? 3001);
+const runtimeMode = process.env.NETGUARDIAN_MODE === "local-agent" ? "local-agent" : "server";
+const defaultPort = runtimeMode === "local-agent" ? 3737 : 3001;
+const port = Number(process.env.PORT ?? defaultPort);
+const bindHost = process.env.BIND_HOST ?? (runtimeMode === "local-agent" ? "127.0.0.1" : "0.0.0.0");
+const publicUiOriginPatterns = [
+  /^https:\/\/[\w.-]+\.github\.io$/,
+  /^http:\/\/localhost(:\d+)?$/,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/
+];
+
+function isAllowedPublicUiOrigin(origin) {
+  return publicUiOriginPatterns.some((pattern) => pattern.test(origin));
+}
+
+if (runtimeMode === "local-agent") {
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Private-Network", "true");
+    next();
+  });
+
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin || isAllowedPublicUiOrigin(origin)) {
+          callback(null, origin ?? true);
+          return;
+        }
+
+        callback(null, false);
+      }
+    })
+  );
+} else {
+  app.use(cors());
+}
 const historyLimit = Number(process.env.HISTORY_LIMIT ?? 25);
 const sshConnectTimeoutMs = Number(process.env.SSH_CONNECT_TIMEOUT_MS ?? 15000);
 const sshCommandTimeoutMs = Number(process.env.SSH_COMMAND_TIMEOUT_MS ?? 30000);
@@ -24,7 +59,6 @@ const tacRemoteBaseDir = process.env.TAC_REMOTE_BASE_DIR ?? "/var/log";
 const tacLogPaths = process.env.TAC_LOG_PATHS;
 const tacDumpPaths = process.env.TAC_DUMP_PATHS;
 
-app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
 const healthCheckSchema = z
@@ -190,8 +224,11 @@ async function runCheckpointCommands(credentials) {
 app.get("/api/status", (_req, res) => {
   res.json({
     ok: true,
-    service: "checkpoint-troubleshooting-backend",
-    commandCount: CHECKPOINT_COMMANDS.length
+    service: runtimeMode === "local-agent" ? "netguardian-local-agent" : "checkpoint-troubleshooting-backend",
+    mode: runtimeMode,
+    commandCount: CHECKPOINT_COMMANDS.length,
+    hostname: os.hostname(),
+    agentUrl: runtimeMode === "local-agent" ? `http://127.0.0.1:${port}` : undefined
   });
 });
 
@@ -370,6 +407,11 @@ app.use((error, _req, res, _next) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`Checkpoint troubleshooting backend listening on port ${port}`);
+app.listen(port, bindHost, () => {
+  if (runtimeMode === "local-agent") {
+    console.log(`NetGuardian Local Agent listening on http://${bindHost}:${port}`);
+    return;
+  }
+
+  console.log(`NetGuardian backend listening on http://${bindHost}:${port}`);
 });

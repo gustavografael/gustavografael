@@ -68,6 +68,52 @@ npm run dev
 
 O frontend roda em `http://localhost:5173` e o backend em `http://localhost:3001`.
 
+## Modo local (recomendado para empresa)
+
+Para publicar a interface na Internet e executar os testes **a partir da máquina do usuário**, use o **NetGuardian Local Agent**.
+
+Fluxo:
+
+```text
+Usuário abre a UI (GitHub Pages ou localhost)
+        |
+        v
+UI detecta http://127.0.0.1:3737
+        |
+        v
+Local Agent na máquina do usuário
+        |
+        v
+SSH para firewalls internos
+```
+
+Na máquina do analista:
+
+```bash
+npm install
+npm run agent
+```
+
+Isso sobe o agente em:
+
+```text
+http://127.0.0.1:3737
+```
+
+Para testar UI + agente juntos:
+
+```bash
+npm run dev:local
+```
+
+A interface mostra um banner verde quando o agente local está conectado. Sem o agente, os botões SSH não funcionam na UI pública.
+
+Observações:
+
+- Credenciais SSH ficam na máquina do usuário.
+- O agente escuta apenas em `127.0.0.1`.
+- A UI publicada no GitHub Pages pode chamar o agente local via Private Network Access do navegador.
+
 ## Publicação no GitHub Pages
 
 O frontend está preparado para publicação pública no GitHub Pages pelo workflow:
@@ -91,7 +137,8 @@ Settings > Pages > Build and deployment > Source: GitHub Actions
 Observação importante:
 
 - GitHub Pages hospeda apenas o frontend estático.
-- Os botões que executam SSH precisam do backend Node.js publicado em outro serviço, como Render, Railway, Fly.io, Azure App Service ou Azure Container Apps.
+- Para uso corporativo, prefira o **Local Agent** (`npm run agent`) na máquina do usuário.
+- Alternativamente, os botões SSH podem usar um backend Node.js publicado em Render, Railway, Fly.io, Azure App Service ou Azure Container Apps.
 - Quando o backend tiver uma URL pública, configure a variável do repositório `NETGUARDIAN_API_BASE_URL` com a URL base do backend, por exemplo:
 
 ```text

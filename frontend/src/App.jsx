@@ -10,6 +10,7 @@ import {
   Download,
   GitCompareArrows,
   History,
+  Laptop,
   Loader2,
   Network,
   Route,
@@ -22,10 +23,13 @@ import {
   applyRoutingPlan,
   downloadReport,
   downloadTacPackage,
+  ensureApiConnection,
   fetchHistory,
   fetchRun,
   generateTacPackage,
+  getAgentStatus,
   previewRouting,
+  refreshLocalAgent,
   runHealthCheck
 } from "./lib/api";
 
@@ -136,8 +140,98 @@ function inputClassName() {
 function Shell({ children }) {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#EE0C5D_0%,#41273C_34%,#231F20_100%)] text-white">
+      <LocalAgentBanner />
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">{children}</div>
     </main>
+  );
+}
+
+function LocalAgentBanner() {
+  const [state, setState] = useState({
+    loading: true,
+    connected: false,
+    hostname: "",
+    baseUrl: ""
+  });
+
+  async function probe() {
+    setState((current) => ({ ...current, loading: true }));
+
+    try {
+      const baseUrl = await refreshLocalAgent();
+      const status = getAgentStatus();
+      setState({
+        loading: false,
+        connected: status?.mode === "local-agent",
+        hostname: status?.hostname ?? "",
+        baseUrl
+      });
+    } catch {
+      setState({
+        loading: false,
+        connected: false,
+        hostname: "",
+        baseUrl: ""
+      });
+    }
+  }
+
+  useEffect(() => {
+    probe();
+  }, []);
+
+  if (state.loading) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+          Procurando NetGuardian Local Agent na sua máquina...
+        </div>
+      </div>
+    );
+  }
+
+  if (state.connected) {
+    return (
+      <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+          <div className="flex items-start gap-2">
+            <Laptop className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              Agente local conectado em <strong>{state.baseUrl}</strong>
+              {state.hostname ? ` • ${state.hostname}` : ""}. Os testes SSH sairão deste computador.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={probe}
+            className="rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-50 transition hover:bg-emerald-400/20"
+          >
+            Verificar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+        <div>
+          <p className="font-semibold">Agente local não encontrado</p>
+          <p className="mt-1 text-amber-50/90">
+            Para executar os testes a partir da sua máquina, rode na sua estação:{" "}
+            <code className="rounded bg-black/20 px-2 py-0.5">npm run agent</code>
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={probe}
+          className="rounded-xl border border-amber-300/30 bg-amber-400/10 px-3 py-1.5 text-xs font-bold text-amber-50 transition hover:bg-amber-400/20"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -499,7 +593,9 @@ function HealthPage({ onBack }) {
   }
 
   useEffect(() => {
-    refreshHistory().catch((requestError) => setError(requestError.message));
+    ensureApiConnection()
+      .then(() => refreshHistory())
+      .catch((requestError) => setError(requestError.message));
   }, []);
 
   function updateForm(field, value) {
