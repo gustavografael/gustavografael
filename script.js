@@ -28,6 +28,13 @@ const ipDestinoFeedback = document.querySelector("#ip-destino-feedback");
 const nodeLocalIp = document.querySelector("#node-local-ip");
 const nodeDestIp = document.querySelector("#node-dest-ip");
 const packetReadiness = document.querySelector("#packet-readiness");
+const vendorList = document.querySelector("#vendor-list");
+const macOrigemInput = document.querySelector("#mac-origem");
+const macDestinoInput = document.querySelector("#mac-destino");
+const macOrigemFeedback = document.querySelector("#mac-origem-feedback");
+const macDestinoFeedback = document.querySelector("#mac-destino-feedback");
+const testMacOrigButton = document.querySelector("#test-mac-orig-button");
+const testMacDestButton = document.querySelector("#test-mac-dest-button");
 
 const fieldLabels = {
   "mac-destino": "MAC destino",
@@ -130,6 +137,101 @@ function markFieldFilled(field) {
   field.classList.toggle("is-filled", Boolean(field.value.trim()));
 }
 
+function lookupMac(mac) {
+  return window.MacVendor.lookupVendor(mac);
+}
+
+function renderVendorBadge(node, result) {
+  const badge = node.querySelector("[data-vendor-badge]");
+  if (!badge) return;
+
+  badge.classList.remove("vendor-badge--network", "vendor-badge--endpoint", "vendor-badge--cloud", "vendor-badge--virtual", "vendor-badge--unknown");
+
+  if (!result.valid || !result.vendor) {
+    badge.textContent = result.valid ? "Fabricante desconhecido" : "MAC inválido";
+    badge.classList.add("vendor-badge--unknown");
+    return;
+  }
+
+  badge.textContent = `${result.vendor} · ${result.device.label}`;
+  badge.classList.add(`vendor-badge--${result.device.type}`);
+}
+
+function renderVendorList() {
+  vendorList.innerHTML = "";
+
+  nodes.forEach((node) => {
+    const mac = node.dataset.mac;
+    const title = node.querySelector("h3")?.textContent || "Dispositivo";
+    const result = lookupMac(mac);
+    const item = document.createElement("li");
+
+    const name = document.createElement("strong");
+    name.textContent = title;
+
+    const address = document.createElement("span");
+    address.className = "vendor-list__mac";
+    address.textContent = result.mac || mac;
+
+    const detail = document.createElement("span");
+    detail.className = "vendor-list__detail";
+    detail.textContent = result.vendor
+      ? `${result.vendor} — ${result.device.label}`
+      : result.message;
+
+    item.append(name, address, detail);
+    vendorList.append(item);
+    renderVendorBadge(node, result);
+  });
+}
+
+function getHopVendorMessage(stepIndex) {
+  const node = nodes[stepIndex];
+  if (!node?.dataset.mac) return "";
+
+  const result = lookupMac(node.dataset.mac);
+  if (!result.vendor) return "";
+  return ` Fabricante: ${result.vendor} (${result.device.label}).`;
+}
+
+function testMacField(input, feedbackEl, { silent = false, label = "MAC" } = {}) {
+  const mac = input.value.trim();
+  markFieldFilled(input);
+
+  if (!mac) {
+    setFeedback(feedbackEl, `Digite um ${label} para testar.`, "is-error");
+    if (!silent) addLog(`Informe um ${label} antes de testar.`);
+    return false;
+  }
+
+  const result = lookupMac(mac);
+  if (!result.valid) {
+    setFeedback(feedbackEl, result.message, "is-error");
+    if (!silent) addLog(`${label} inválido: ${mac}.`);
+    return false;
+  }
+
+  input.value = result.mac;
+  const status = result.vendor ? "is-ok" : "is-error";
+  setFeedback(feedbackEl, result.message, status);
+
+  if (!silent) {
+    addLog(
+      result.vendor
+        ? `OUI identificado em ${result.mac}: ${result.vendor} (${result.device.label}).`
+        : `MAC ${result.mac} válido, mas fabricante não encontrado na base local.`,
+    );
+  }
+
+  updateReadiness();
+  return true;
+}
+
+function initPathVendors() {
+  renderVendorList();
+  testMacField(macOrigemInput, macOrigemFeedback, { silent: true, label: "MAC de origem" });
+}
+
 function getMissingFields() {
   return dropFields.filter((field) => !field.value.trim());
 }
@@ -188,6 +290,10 @@ function fillField(target, value, { testIp = true } = {}) {
     if (testIp) {
       testDestinationIp({ silent: true });
     }
+  }
+
+  if (target === "mac-destino" && testIp) {
+    testMacField(macDestinoInput, macDestinoFeedback, { silent: true, label: "MAC destino" });
   }
 
   updateReadiness();
@@ -259,7 +365,7 @@ function animateJourney() {
 
   updateNodes(stepIndex);
   updateProgress(route[stepIndex]);
-  addLog(route[stepIndex].log);
+  addLog(route[stepIndex].log + getHopVendorMessage(stepIndex));
 
   activeTimer = window.setInterval(() => {
     stepIndex += 1;
@@ -280,7 +386,7 @@ function animateJourney() {
 
     updateNodes(stepIndex);
     updateProgress(route[stepIndex]);
-    addLog(route[stepIndex].log);
+    addLog(route[stepIndex].log + getHopVendorMessage(stepIndex));
   }, 850);
 }
 
@@ -516,9 +622,21 @@ async function sendPacket({ autoFill = false } = {}) {
   score.textContent = "0";
   progressLabel.textContent = "0%";
   packetStatus.textContent = "Pacote em trânsito";
+  const macDest = lookupMac(data.get("macDestino"));
+  const macOrig = lookupMac(data.get("macOrigem"));
+
   addLog(
     `Enviando ${data.get("protocolo")} para ${data.get("ipDestino")}:${data.get("porta")} com TTL ${data.get("ttl")}.`,
   );
+
+  if (macOrig.vendor) {
+    addLog(`Origem MAC ${macOrig.mac}: ${macOrig.vendor} (${macOrig.device.label}).`);
+  }
+
+  if (macDest.vendor) {
+    addLog(`Destino MAC ${macDest.mac}: ${macDest.vendor} (${macDest.device.label}).`);
+  }
+
   animateJourney();
 }
 
@@ -572,6 +690,23 @@ dropFields.forEach((field) => {
   });
 });
 
+macOrigemInput.addEventListener("input", () => updateReadiness());
+macDestinoInput.addEventListener("input", () => updateReadiness());
+
+macOrigemInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    testMacField(macOrigemInput, macOrigemFeedback, { label: "MAC de origem" });
+  }
+});
+
+macDestinoInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    testMacField(macDestinoInput, macDestinoFeedback, { label: "MAC destino" });
+  }
+});
+
 ipOrigemInput.addEventListener("input", () => {
   ipOrigemInput.dataset.userEdited = "true";
   const ip = ipOrigemInput.value.trim();
@@ -606,6 +741,12 @@ ipDestinoInput.addEventListener("keydown", (event) => {
 detectIpButton.addEventListener("click", () => detectNetworkIps({ announce: true }));
 useLocalIpButton.addEventListener("click", useLocalIp);
 testIpButton.addEventListener("click", () => testDestinationIp());
+testMacOrigButton.addEventListener("click", () =>
+  testMacField(macOrigemInput, macOrigemFeedback, { label: "MAC de origem" }),
+);
+testMacDestButton.addEventListener("click", () =>
+  testMacField(macDestinoInput, macDestinoFeedback, { label: "MAC destino" }),
+);
 autoSendButton.addEventListener("click", () => sendPacket({ autoFill: true }));
 form.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -617,7 +758,7 @@ resetButton.addEventListener("click", () => {
   journeyRunning = false;
   form.reset();
   delete ipOrigemInput.dataset.userEdited;
-  form.elements.macOrigem.value = "11:22:33:44:55:66";
+  form.elements.macOrigem.value = "00:1B:21:44:55:66";
   form.elements.protocolo.value = "TCP";
   dropFields.forEach((field) => field.classList.remove("is-filled", "is-over", "shake"));
   pieces.forEach((piece) => piece.classList.remove("is-used"));
@@ -633,11 +774,14 @@ resetButton.addEventListener("click", () => {
   logList.innerHTML = "<li><time>00:00:00</time> Pacote aguardando montagem...</li>";
   setFeedback(ipOrigemFeedback, "", "");
   setFeedback(ipDestinoFeedback, "", "");
+  setFeedback(macOrigemFeedback, "", "");
+  setFeedback(macDestinoFeedback, "", "");
   nodeDestIp.textContent = "8.8.8.8";
   autoSendButton.disabled = false;
   sendButton.disabled = false;
   updateSteps(0);
   updateReadiness();
+  initPathVendors();
   detectNetworkIps({ announce: false });
 });
 
@@ -646,5 +790,6 @@ viewToggle.addEventListener("click", () => {
   viewToggle.textContent = enabled ? "Ver plano" : "Ver em 3D";
 });
 
+initPathVendors();
 detectNetworkIps({ announce: true });
 updateReadiness();

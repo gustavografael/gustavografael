@@ -683,6 +683,82 @@ input::placeholder {
   gap: 18px;
 }
 
+.vendor-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 12, 28, 0.75);
+  color: #d4cff8;
+  font-size: 0.62rem;
+  line-height: 1.2;
+  max-width: 100%;
+}
+
+.vendor-badge--network {
+  border-color: rgba(67, 215, 255, 0.45);
+  color: #c8f8ff;
+}
+
+.vendor-badge--endpoint {
+  border-color: rgba(125, 255, 178, 0.45);
+  color: #b8ffd3;
+}
+
+.vendor-badge--cloud {
+  border-color: rgba(255, 214, 102, 0.45);
+  color: #ffe7a8;
+}
+
+.vendor-badge--virtual {
+  border-color: rgba(196, 181, 253, 0.45);
+  color: #e9ddff;
+}
+
+.vendor-panel__note {
+  margin: 0 0 10px;
+  color: #a8a0d8;
+  font-size: 0.82rem;
+}
+
+.vendor-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vendor-list li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(8, 12, 28, 0.55);
+}
+
+.vendor-list strong {
+  color: #ffffff;
+  font-size: 0.84rem;
+}
+
+.vendor-list__mac {
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  color: #9db4ff;
+  font-size: 0.76rem;
+}
+
+.vendor-list__detail {
+  color: #d4cff8;
+  font-size: 0.78rem;
+}
+
+.vendor-panel {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
 .mini-panel {
   min-height: 180px;
   padding: 20px;

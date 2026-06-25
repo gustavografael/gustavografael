@@ -69,7 +69,7 @@
           </div>
 
           <div class="piece-tray" aria-label="Peças disponíveis">
-            <button class="piece" draggable="true" data-target="mac-destino" data-value="AA:BB:CC:DD:EE:FF">
+            <button class="piece" draggable="true" data-target="mac-destino" data-value="00:1A:A1:DD:EE:FF">
               MAC destino
             </button>
             <button class="piece" draggable="true" data-target="ip-destino" data-value="8.8.8.8">
@@ -115,17 +115,29 @@
               <legend>Ethernet <span>Camada 2</span></legend>
               <label>
                 MAC Destino
-                <input
-                  id="mac-destino"
-                  name="macDestino"
-                  class="drop-field"
-                  placeholder="solte MAC destino aqui"
-                  autocomplete="off"
-                />
+                <div class="field-row">
+                  <input
+                    id="mac-destino"
+                    name="macDestino"
+                    class="drop-field"
+                    placeholder="ex.: 00:1A:A1:DD:EE:FF"
+                    autocomplete="off"
+                  />
+                  <button class="ghost-button ghost-button--compact" type="button" id="test-mac-dest-button">
+                    Testar MAC
+                  </button>
+                </div>
+                <small class="field-feedback" id="mac-destino-feedback"></small>
               </label>
               <label>
                 MAC Origem
-                <input name="macOrigem" value="11:22:33:44:55:66" autocomplete="off" />
+                <div class="field-row">
+                  <input name="macOrigem" id="mac-origem" value="00:1B:21:44:55:66" autocomplete="off" />
+                  <button class="ghost-button ghost-button--compact" type="button" id="test-mac-orig-button">
+                    Testar MAC
+                  </button>
+                </div>
+                <small class="field-feedback" id="mac-origem-feedback"></small>
               </label>
             </fieldset>
 
@@ -229,40 +241,47 @@
             <div class="network-line" aria-hidden="true"></div>
             <div class="packet" id="packet" aria-hidden="true"></div>
 
-            <article class="node node--active" data-node="0">
+            <article class="node node--active" data-node="0" data-mac="00:1B:21:8A:4C:10">
               <span class="node__icon">💻</span>
               <h3>Seu Computador</h3>
               <p id="node-local-ip">192.168.1.10</p>
+              <span class="vendor-badge" data-vendor-badge></span>
             </article>
-            <article class="node" data-node="1">
+            <article class="node" data-node="1" data-mac="00:1A:A1:2F:33:01">
               <span class="node__icon">▰</span>
               <h3>Switch</h3>
               <p>Camada 2<br />Encaminha por MAC</p>
+              <span class="vendor-badge" data-vendor-badge></span>
             </article>
-            <article class="node" data-node="2">
+            <article class="node" data-node="2" data-mac="00:46:4B:12:AA:77">
               <span class="node__icon">📡</span>
               <h3>Roteador</h3>
               <p>Camada 3<br />Roteia por IP</p>
+              <span class="vendor-badge" data-vendor-badge></span>
             </article>
-            <article class="node" data-node="3">
+            <article class="node" data-node="3" data-mac="00:46:4B:12:AA:78">
               <span class="node__icon">📊</span>
               <h3>NAT</h3>
               <p>Tradução<br />IP privado → público</p>
+              <span class="vendor-badge" data-vendor-badge></span>
             </article>
-            <article class="node" data-node="4">
+            <article class="node" data-node="4" data-mac="00:1C:7F:09:22:55">
               <span class="node__icon">🧱</span>
               <h3>Firewall</h3>
               <p>Segurança<br />Inspeciona pacote</p>
+              <span class="vendor-badge" data-vendor-badge></span>
             </article>
-            <article class="node" data-node="5">
+            <article class="node" data-node="5" data-mac="00:50:56:A1:B2:C3">
               <span class="node__icon">🗄️</span>
               <h3>DNS</h3>
               <p>Resolve nomes<br />se necessário</p>
+              <span class="vendor-badge" data-vendor-badge></span>
             </article>
-            <article class="node" data-node="6">
+            <article class="node" data-node="6" data-mac="3C:5A:B4:01:02:03">
               <span class="node__icon">☁️</span>
               <h3>Servidor</h3>
               <p id="node-dest-ip">8.8.8.8</p>
+              <span class="vendor-badge" data-vendor-badge></span>
             </article>
           </div>
 
@@ -292,19 +311,19 @@
               </dl>
             </article>
 
-            <article class="mini-panel layer-explain">
-              <h3>Camadas observadas</h3>
-              <ul>
-                <li><strong>Camada 2:</strong> usa MAC para atravessar a rede local.</li>
-                <li><strong>Camada 3:</strong> usa IP e TTL para encontrar a rota.</li>
-                <li><strong>Camada 4:</strong> usa protocolo e porta para a conversa.</li>
-              </ul>
+            <article class="mini-panel vendor-panel">
+              <h3>Fabricantes na rota (OUI/MAC)</h3>
+              <p class="vendor-panel__note">
+                Cada salto usa um MAC simulado. O prefixo OUI revela o fabricante da interface.
+              </p>
+              <ol class="vendor-list" id="vendor-list"></ol>
             </article>
           </div>
         </section>
       </main>
     </div>
 
+    <script src="mac-vendor.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
