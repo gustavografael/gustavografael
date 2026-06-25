@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Download — Pacote de Rede</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, Segoe UI, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #0b1020;
+        color: #eef0ff;
+      }
+
+      .card {
+        width: min(520px, 92vw);
+        padding: 28px;
+        border: 1px solid rgba(139, 92, 246, 0.35);
+        border-radius: 20px;
+        background: rgba(18, 24, 48, 0.95);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.5rem;
+      }
+
+      p {
+        color: #b8b2e6;
+        line-height: 1.55;
+      }
+
+      .actions {
+        display: grid;
+        gap: 12px;
+        margin: 24px 0;
+      }
+
+      a.button {
+        display: block;
+        padding: 14px 18px;
+        border-radius: 12px;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      .primary {
+        background: linear-gradient(135deg, #8b5cf6, #6366f1);
+        color: white;
+      }
+
+      .secondary {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: #eef0ff;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      ol {
+        margin: 0;
+        padding-left: 20px;
+        color: #d4cff8;
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
+      code {
+        background: rgba(255, 255, 255, 0.08);
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Download do laboratório</h1>
+      <p>
+        Use o botão abaixo para baixar o arquivo que roda na sua máquina, sem instalar nada.
+      </p>
+
+      <div class="actions">
+        <a
+          class="button primary"
+          href="https://github.com/gustavografael/gustavografael/releases/latest/download/pacote-rede-standalone.html"
+        >
+          Baixar arquivo HTML (recomendado)
+        </a>
+        <a
+          class="button secondary"
+          href="https://github.com/gustavografael/gustavografael/releases/latest/download/pacote-rede-standalone.zip"
+        >
+          Baixar ZIP (se o e-mail bloquear .html)
+        </a>
+      </div>
+
+      <p><strong>Depois de baixar:</strong></p>
+      <ol>
+        <li>Se baixou o ZIP, extraia o arquivo <code>.html</code></li>
+        <li>Dê duplo clique em <code>pacote-rede-standalone.html</code></li>
+        <li>Abre no Chrome, Edge ou Firefox</li>
+      </ol>
+
+      <p>
+        Se o navegador mostrar código em vez de baixar, clique com o botão direito no botão
+        roxo e escolha <strong>Salvar link como...</strong>
+      </p>
+    </main>
+  </body>
+</html>

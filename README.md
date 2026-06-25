@@ -4,17 +4,20 @@ Dashboard interativa para simular a jornada de um pacote pela rede.
 
 ## Download para usar na sua máquina (offline)
 
-Baixe **um único arquivo HTML** e abra com duplo clique no navegador:
+O link antigo do GitHub **abre o código na tela** em vez de baixar. Use um destes:
 
-**Link direto de download:**
-https://github.com/gustavografael/gustavografael/raw/main/pacote-rede-standalone.html
+### Página de download (recomendado)
+https://github.com/gustavografael/gustavografael/blob/main/download.html
 
-**Como baixar:**
-1. Abra o link acima
-2. O navegador baixa `pacote-rede-standalone.html` (ou mostra o código)
-3. Se mostrar o código: `Ctrl+S` → salve como `pacote-rede-standalone.html`
-4. Dê duplo clique no arquivo salvo
+### Download direto do Release
+- **HTML:** https://github.com/gustavografael/gustavografael/releases/latest/download/pacote-rede-standalone.html
+- **ZIP:** https://github.com/gustavografael/gustavografael/releases/latest/download/pacote-rede-standalone.zip
 
-**Funciona offline:** simulação do pacote, teste de MAC/OUI e montagem automática.
+### Como usar
+1. Baixe o arquivo (ou extraia o ZIP)
+2. Dê duplo clique em `pacote-rede-standalone.html`
+3. Abre no Chrome, Edge ou Firefox — sem instalar nada
+
+**Funciona offline:** simulação, teste de MAC/OUI, montar e enviar pacote.
 
 **Precisa de internet:** detectar IP público e consultar IP destino.
