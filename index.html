@@ -1,0 +1,2238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Controle Financeiro Pessoal</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b12;
+      --bg-soft: #0d1321;
+      --card: rgba(17, 24, 39, 0.82);
+      --card-border: rgba(148, 163, 184, 0.18);
+      --text: #e5edf8;
+      --muted: #94a3b8;
+      --muted-strong: #cbd5e1;
+      --primary: #38bdf8;
+      --primary-strong: #0ea5e9;
+      --success: #34d399;
+      --warning: #f59e0b;
+      --danger: #fb7185;
+      --purple: #a78bfa;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 34rem),
+        radial-gradient(circle at 85% 8%, rgba(167, 139, 250, 0.18), transparent 28rem),
+        linear-gradient(135deg, #05070c 0%, var(--bg) 48%, #111827 100%);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.4fr 0.8fr;
+      gap: 24px;
+      align-items: stretch;
+      margin-bottom: 24px;
+    }
+
+    .hero-card,
+    .card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.64));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero-card {
+      min-height: 280px;
+      padding: 34px;
+    }
+
+    .hero-card::after {
+      position: absolute;
+      right: -90px;
+      bottom: -90px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.16);
+      content: "";
+      filter: blur(8px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 999px;
+      background: rgba(14, 165, 233, 0.12);
+      color: #bae6fd;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 740px;
+      margin: 26px 0 16px;
+      font-size: clamp(2.2rem, 5vw, 4.6rem);
+      line-height: 0.94;
+      letter-spacing: -0.07em;
+    }
+
+    .hero p {
+      max-width: 630px;
+      margin: 0;
+      color: var(--muted-strong);
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .banking-card {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 16px;
+      max-width: 430px;
+      margin-top: 28px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 26px;
+      background:
+        linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(15, 23, 42, 0.24) 42%, rgba(167, 139, 250, 0.32)),
+        rgba(15, 23, 42, 0.72);
+      box-shadow: 0 24px 60px rgba(14, 165, 233, 0.18);
+    }
+
+    .banking-card::before {
+      position: absolute;
+      inset: 18px 18px auto auto;
+      width: 52px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.16));
+      content: "";
+    }
+
+    .banking-card span {
+      color: rgba(226, 232, 240, 0.76);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .banking-card strong {
+      display: block;
+      margin-top: 6px;
+      font-size: clamp(1.7rem, 3vw, 2.35rem);
+      letter-spacing: -0.05em;
+    }
+
+    .banking-card-bottom {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      color: rgba(226, 232, 240, 0.82);
+      font-size: 0.9rem;
+    }
+
+    .button {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+      color: #03101b;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 32px rgba(14, 165, 233, 0.24);
+    }
+
+    .button.secondary {
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: rgba(15, 23, 42, 0.86);
+      color: var(--text);
+    }
+
+    .button.danger {
+      background: rgba(251, 113, 133, 0.16);
+      color: #fecdd3;
+    }
+
+    .button.primary-action {
+      min-height: 54px;
+      padding-inline: 22px;
+      box-shadow: 0 18px 42px rgba(14, 165, 233, 0.28);
+    }
+
+    .quote-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 26px;
+    }
+
+    .quote-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .status {
+      display: inline-flex;
+      gap: 7px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--warning);
+      box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.12);
+    }
+
+    .status-dot.online {
+      background: var(--success);
+      box-shadow: 0 0 0 6px rgba(52, 211, 153, 0.12);
+    }
+
+    .quote-value {
+      margin: 28px 0 8px;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      font-weight: 900;
+      letter-spacing: -0.05em;
+    }
+
+    .quote-meta,
+    .helper {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .refresh-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 8px 11px;
+      border: 1px solid rgba(52, 211, 153, 0.2);
+      border-radius: 999px;
+      background: rgba(52, 211, 153, 0.1);
+      color: #bbf7d0;
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .manual-rate {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 0.95fr 1.35fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .card {
+      padding: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .dashboard-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .month-select {
+      width: auto;
+      min-width: 170px;
+      min-height: 46px;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+
+    h2,
+    h3 {
+      margin: 0;
+      letter-spacing: -0.03em;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+    }
+
+    h3 {
+      font-size: 1rem;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .import-panel {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(52, 211, 153, 0.08)),
+        rgba(2, 6, 23, 0.28);
+    }
+
+    .import-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .import-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .import-status {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .import-status.success {
+      color: #bbf7d0;
+    }
+
+    .import-status.error {
+      color: #fecdd3;
+    }
+
+    .import-status.warning {
+      color: #fde68a;
+    }
+
+    .import-status strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .import-status ul {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
+
+    .import-status li {
+      color: inherit;
+    }
+
+    .import-status em {
+      color: var(--muted-strong);
+      font-style: normal;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+
+    .password-dialog {
+      width: min(420px, calc(100% - 32px));
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: var(--radius-xl);
+      background: rgba(15, 23, 42, 0.98);
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+
+    .password-dialog::backdrop {
+      background: rgba(2, 6, 23, 0.78);
+      backdrop-filter: blur(6px);
+    }
+
+    .password-card {
+      display: grid;
+      gap: 14px;
+      margin: 0;
+      padding: 8px;
+    }
+
+    .password-card p {
+      margin: 0;
+      color: var(--muted-strong);
+      line-height: 1.5;
+    }
+
+    .password-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 0.74fr;
+      gap: 12px;
+    }
+
+    label {
+      color: var(--muted-strong);
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: var(--radius-md);
+      outline: none;
+      background: rgba(2, 6, 23, 0.44);
+      color: var(--text);
+      padding: 0 14px;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: rgba(56, 189, 248, 0.8);
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.14);
+      background: rgba(2, 6, 23, 0.72);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .insight-panel {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 18px;
+      padding: 16px 18px;
+      border: 1px solid rgba(52, 211, 153, 0.18);
+      border-radius: var(--radius-lg);
+      background: rgba(52, 211, 153, 0.08);
+    }
+
+    .insight-panel span {
+      color: #bbf7d0;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .insight-panel strong {
+      color: var(--text);
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    .metric {
+      min-height: 118px;
+      padding: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: var(--radius-lg);
+      background: rgba(2, 6, 23, 0.32);
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 14px;
+      font-size: clamp(1.45rem, 2.4vw, 2rem);
+      letter-spacing: -0.05em;
+    }
+
+    .metric small {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 0.85fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .chart-panel {
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: var(--radius-lg);
+      background: rgba(2, 6, 23, 0.26);
+      padding: 16px;
+    }
+
+    .chart-panel.featured {
+      grid-column: 1 / -1;
+      background:
+        linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(167, 139, 250, 0.1)),
+        rgba(2, 6, 23, 0.3);
+    }
+
+    .chart-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .chart-kicker {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 240px;
+    }
+
+    .donut-wrap {
+      display: grid;
+      place-items: center;
+      min-height: 240px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted-strong);
+      font-size: 0.86rem;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+    }
+
+    .expense-list {
+      display: grid;
+      gap: 10px;
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .expense {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 14px;
+      align-items: center;
+      padding: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.58);
+    }
+
+    .expense-title {
+      overflow: hidden;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .expense-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: #bae6fd;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .amount {
+      text-align: right;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .converted {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .icon-button {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 0;
+      border-radius: 12px;
+      background: rgba(251, 113, 133, 0.12);
+      color: #fecdd3;
+      font-size: 1.1rem;
+    }
+
+    .empty {
+      padding: 32px 18px;
+      border: 1px dashed rgba(148, 163, 184, 0.24);
+      border-radius: var(--radius-lg);
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    .floating-add {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 58px;
+      height: 58px;
+      border: 0;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--primary), var(--success));
+      color: #03101b;
+      font-size: 2rem;
+      font-weight: 900;
+      text-decoration: none;
+      box-shadow: 0 22px 48px rgba(14, 165, 233, 0.36);
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .grid,
+      .charts {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        width: min(100% - 22px, 1180px);
+        padding-top: 18px;
+      }
+
+      .hero-card,
+      .card,
+      .quote-card {
+        padding: 20px;
+        border-radius: 22px;
+      }
+
+      .field-row,
+      .manual-rate,
+      .summary-grid,
+      .expense {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard-actions {
+        justify-content: stretch;
+      }
+
+      .month-select,
+      .dashboard-actions .button {
+        width: 100%;
+      }
+
+      .amount {
+        text-align: left;
+      }
+
+      .banking-card-bottom {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .floating-add {
+        right: 16px;
+        bottom: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-card">
+        <span class="eyebrow">Finanças pessoais</span>
+        <h1 id="page-title">Controle seus gastos em BRL e USD.</h1>
+        <p>
+          Registre despesas, acompanhe o gasto mensal convertido automaticamente e veja gráficos simples
+          para entender para onde seu dinheiro está indo.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary-action" href="#expense-form">+ Adicionar despesa</a>
+          <button class="button secondary" id="seed-demo" type="button">Carregar exemplo</button>
+        </div>
+        <div class="banking-card" aria-label="Cartão de resumo financeiro">
+          <div>
+            <span>Saldo planejado</span>
+            <strong id="banking-balance">R$ 0,00</strong>
+          </div>
+          <div class="banking-card-bottom">
+            <div>Finance Control</div>
+            <div id="banking-month">Mês atual</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="quote-card card" aria-labelledby="quote-title">
+        <div>
+          <div class="quote-top">
+            <h2 id="quote-title">Dólar hoje</h2>
+            <span class="status" id="quote-status">
+              <span class="status-dot" id="quote-dot"></span>
+              <span id="quote-status-text">Buscando...</span>
+            </span>
+          </div>
+          <div class="quote-value" id="quote-value">R$ --</div>
+          <div class="quote-meta" id="quote-meta">Cotação USD-BRL em tempo real com fallback automático.</div>
+          <div class="refresh-note" id="refresh-note">Atualiza automaticamente a cada 60s</div>
+        </div>
+        <div class="manual-rate" aria-label="Cotação manual">
+          <input id="manual-rate" inputmode="decimal" placeholder="Ajuste manual: 5,10" aria-label="Cotação manual do dólar">
+          <button class="button secondary" id="refresh-rate" type="button">Atualizar</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="grid">
+      <aside class="card" aria-labelledby="form-title">
+        <div class="card-header">
+          <div>
+            <h2 id="form-title">Nova despesa</h2>
+            <p class="helper">Valores em USD são convertidos para BRL sempre que a cotação muda.</p>
+          </div>
+        </div>
+
+        <form class="form-grid" id="expense-form">
+          <div class="field">
+            <label for="description">Descrição</label>
+            <input id="description" name="description" maxlength="60" placeholder="Ex.: Mercado, Netflix, almoço" required>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="amount">Valor</label>
+              <input id="amount" name="amount" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" required>
+            </div>
+            <div class="field">
+              <label for="currency">Moeda</label>
+              <select id="currency" name="currency">
+                <option value="BRL">BRL</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="category">Categoria</label>
+              <select id="category" name="category">
+                <option>Fast food</option>
+                <option>Gasolina</option>
+                <option>Educação</option>
+                <option>Mercado</option>
+                <option>Moradia</option>
+                <option>Transporte</option>
+                <option>Assinaturas</option>
+                <option>Saúde</option>
+                <option>Compras</option>
+                <option>Lazer</option>
+                <option>Outros</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="date">Data</label>
+              <input id="date" name="date" type="date" required>
+            </div>
+          </div>
+
+          <button class="button" type="submit">Salvar despesa</button>
+        </form>
+
+        <section class="import-panel" aria-labelledby="import-title">
+          <div>
+            <h3 id="import-title">Importar fatura do cartão</h3>
+            <p>Envie um PDF ou selecione a pasta sincronizada do OneDrive para detectar lançamentos, separar por categoria e atualizar seus gráficos automaticamente. Se o PDF tiver senha, ela será pedida no navegador e não será salva.</p>
+          </div>
+          <div class="import-actions">
+            <label class="button secondary" for="pdf-file">Importar PDF</label>
+            <input class="sr-only" id="pdf-file" type="file" accept="application/pdf">
+            <label class="button secondary" for="pdf-folder">Importar pasta OneDrive</label>
+            <input class="sr-only" id="pdf-folder" type="file" accept="application/pdf" multiple webkitdirectory directory>
+            <button class="button secondary" id="connect-folder" type="button">Conectar pasta</button>
+          </div>
+          <div class="import-status" id="import-status">Nenhum PDF importado ainda. Selecione sua pasta local do OneDrive ou conecte a pasta no navegador.</div>
+        </section>
+      </aside>
+
+      <section class="card" aria-labelledby="dashboard-title">
+        <div class="card-header">
+          <div>
+            <h2 id="dashboard-title">Gastos mensais</h2>
+            <p class="helper" id="month-label">Resumo do mês atual</p>
+          </div>
+          <div class="dashboard-actions">
+            <select class="month-select" id="analysis-month" aria-label="Mês analisado"></select>
+            <select class="month-select" id="category-filter" aria-label="Categoria analisada"></select>
+            <button class="button danger" id="clear-expenses" type="button">Limpar</button>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <article class="metric">
+            <span>Total convertido</span>
+            <strong id="total-brl">R$ 0,00</strong>
+            <small id="total-brl-detail">Gastos filtrados em reais</small>
+          </article>
+          <article class="metric">
+            <span>Em dólar</span>
+            <strong id="total-usd">US$ 0.00</strong>
+            <small>Despesas lançadas originalmente em USD</small>
+          </article>
+          <article class="metric">
+            <span>Registros</span>
+            <strong id="expense-count">0</strong>
+            <small id="expense-count-detail">Lançamentos filtrados</small>
+          </article>
+          <article class="metric">
+            <span>Maior gasto</span>
+            <strong id="top-category">--</strong>
+            <small id="top-category-detail">Importe ou adicione despesas para analisar</small>
+          </article>
+        </div>
+
+        <div class="insight-panel" aria-live="polite">
+          <span>Onde você mais gastou</span>
+          <strong id="category-insight">Ainda não há dados suficientes para identificar a principal categoria.</strong>
+        </div>
+
+        <div class="charts">
+          <article class="chart-panel featured">
+            <div class="chart-title-row">
+              <h3>Gastos por categoria</h3>
+              <span class="chart-kicker" id="category-chart-kicker">Mês analisado em BRL</span>
+            </div>
+            <canvas id="monthly-chart" width="960" height="300" aria-label="Gráfico de gastos por categoria"></canvas>
+          </article>
+          <article class="chart-panel">
+            <h3>Evolução diária</h3>
+            <canvas id="bar-chart" width="720" height="300" aria-label="Gráfico de gastos por dia"></canvas>
+          </article>
+          <article class="chart-panel">
+            <h3>Participação por categoria</h3>
+            <div class="donut-wrap">
+              <canvas id="donut-chart" width="360" height="300" aria-label="Gráfico de gastos por categoria"></canvas>
+            </div>
+            <div class="legend" id="legend"></div>
+          </article>
+        </div>
+
+        <div class="expense-list" id="expense-list" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <p class="footer-note">
+      A cotação é atualizada automaticamente a cada 60 segundos. Caso a API esteja indisponível, informe uma taxa manual.
+    </p>
+    <a class="floating-add" href="#expense-form" aria-label="Adicionar nova despesa">+</a>
+  </main>
+
+  <dialog class="password-dialog" id="password-dialog" aria-labelledby="password-title">
+    <form class="password-card" method="dialog">
+      <h2 id="password-title">Senha do PDF</h2>
+      <p id="password-message">Este PDF está protegido. Informe a senha para importar a fatura.</p>
+      <div class="field">
+        <label for="pdf-password">Senha</label>
+        <input id="pdf-password" type="password" autocomplete="off" placeholder="Digite a senha do PDF">
+      </div>
+      <div class="password-actions">
+        <button class="button secondary" value="cancel" type="submit">Cancelar</button>
+        <button class="button" value="confirm" type="submit">Desbloquear PDF</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" referrerpolicy="no-referrer"></script>
+  <script>
+    const RATE_PROVIDERS = [
+      {
+        name: "open.er-api.com",
+        url: "https://open.er-api.com/v6/latest/USD",
+        parse: (data) => Number(data.rates?.BRL)
+      },
+      {
+        name: "AwesomeAPI",
+        url: "https://economia.awesomeapi.com.br/json/last/USD-BRL",
+        parse: (data) => Number(data.USDBRL?.bid)
+      }
+    ];
+    const STORAGE_KEY = "finance-dashboard-expenses-v1";
+    const RATE_KEY = "finance-dashboard-rate-v1";
+    const IMPORTED_FILES_KEY = "finance-dashboard-imported-files-v1";
+    const REFRESH_INTERVAL = 60_000;
+    const DIRECTORY_SCAN_INTERVAL = 30_000;
+    let connectedDirectoryHandle = null;
+    let directoryScanTimer = null;
+
+    const categoryColors = {
+      "Fast food": "#fb7185",
+      "Gasolina": "#f59e0b",
+      "Educação": "#a78bfa",
+      "Mercado": "#34d399",
+      "Moradia": "#38bdf8",
+      "Transporte": "#22d3ee",
+      "Assinaturas": "#818cf8",
+      "Saúde": "#14b8a6",
+      "Compras": "#f472b6",
+      "Lazer": "#eab308",
+      "Outros": "#94a3b8"
+    };
+
+    const categoryKeywords = {
+      "Fast food": ["speedy frango", "ifood", "uber eats", "burger", "pizza", "lanche", "hamburg", "frango", "croccante", "crocante", "restaurante", "churrascaria", "bar", "food", "cafe", "café", "padaria"],
+      "Gasolina": ["posto", "posto gentil", "gasolina", "combustivel", "combustível", "shell", "ipiranga", "petrobras"],
+      "Educação": ["educacional", "ipe grupo educacional", "escola", "faculdade", "curso", "universidade", "colegio", "colégio", "spc essencial"],
+      "Mercado": ["mercado", "mercadoviegas", "santa barbara", "supermercado", "hortifruti", "adega", "atacadao", "atacadão", "carrefour", "extra", "pao de acucar", "pão de açúcar"],
+      "Moradia": ["aluguel", "condominio", "condomínio", "energia", "luz", "agua", "água", "internet", "claro", "vivo", "tim", "oi", "net"],
+      "Transporte": ["uber", "99", "taxi", "táxi", "estacionamento", "metro", "metrô", "onibus", "ônibus", "pedagio", "pedágio"],
+      "Assinaturas": ["netflix", "spotify", "prime", "amazon", "google", "apple", "microsoft", "adobe", "assinatura", "streaming", "youtube", "icloud"],
+      "Saúde": ["farmacia", "farmácia", "drogaria", "drogaria sao paulo", "drogaria são paulo", "hospital", "medico", "médico", "clinica", "clínica", "odont", "academia", "laboratorio", "laboratório"],
+      "Compras": ["mercadolivre", "mercado livre", "mp*mercadolivre", "shopping", "centauro", "loja", "brecho", "loly", "magazine", "americanas", "amazon marketplace"],
+      "Lazer": ["cinema", "ingresso", "hotel", "viagem", "airbnb", "game", "steam", "livraria", "show", "teatro"],
+      "Outros": []
+    };
+
+    const categoryList = Object.keys(categoryColors);
+
+    const state = {
+      rate: Number(localStorage.getItem(RATE_KEY)) || 5,
+      expenses: loadExpenses(),
+      importedFileKeys: new Set(loadImportedFileKeys()),
+      activeMonth: null,
+      categoryFilter: "Todas"
+    };
+    state.activeMonth = getDefaultAnalysisMonth(state.expenses);
+
+    const elements = {
+      form: document.querySelector("#expense-form"),
+      description: document.querySelector("#description"),
+      amount: document.querySelector("#amount"),
+      currency: document.querySelector("#currency"),
+      category: document.querySelector("#category"),
+      date: document.querySelector("#date"),
+      pdfFile: document.querySelector("#pdf-file"),
+      pdfFolder: document.querySelector("#pdf-folder"),
+      connectFolder: document.querySelector("#connect-folder"),
+      importStatus: document.querySelector("#import-status"),
+      passwordDialog: document.querySelector("#password-dialog"),
+      passwordMessage: document.querySelector("#password-message"),
+      pdfPassword: document.querySelector("#pdf-password"),
+      quoteValue: document.querySelector("#quote-value"),
+      quoteMeta: document.querySelector("#quote-meta"),
+      quoteDot: document.querySelector("#quote-dot"),
+      quoteStatusText: document.querySelector("#quote-status-text"),
+      manualRate: document.querySelector("#manual-rate"),
+      refreshRate: document.querySelector("#refresh-rate"),
+      monthLabel: document.querySelector("#month-label"),
+      analysisMonth: document.querySelector("#analysis-month"),
+      categoryFilter: document.querySelector("#category-filter"),
+      bankingBalance: document.querySelector("#banking-balance"),
+      bankingMonth: document.querySelector("#banking-month"),
+      totalBrl: document.querySelector("#total-brl"),
+      totalBrlDetail: document.querySelector("#total-brl-detail"),
+      totalUsd: document.querySelector("#total-usd"),
+      expenseCount: document.querySelector("#expense-count"),
+      expenseCountDetail: document.querySelector("#expense-count-detail"),
+      topCategory: document.querySelector("#top-category"),
+      topCategoryDetail: document.querySelector("#top-category-detail"),
+      categoryInsight: document.querySelector("#category-insight"),
+      list: document.querySelector("#expense-list"),
+      clear: document.querySelector("#clear-expenses"),
+      seedDemo: document.querySelector("#seed-demo"),
+      monthlyChart: document.querySelector("#monthly-chart"),
+      categoryChartKicker: document.querySelector("#category-chart-kicker"),
+      barChart: document.querySelector("#bar-chart"),
+      donutChart: document.querySelector("#donut-chart"),
+      legend: document.querySelector("#legend")
+    };
+
+    const brlFormatter = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+
+    const usdFormatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD"
+    });
+
+    const monthFormatter = new Intl.DateTimeFormat("pt-BR", {
+      month: "long",
+      year: "numeric"
+    });
+
+    const shortMonthFormatter = new Intl.DateTimeFormat("pt-BR", {
+      month: "short"
+    });
+
+    init();
+
+    function init() {
+      elements.date.valueAsDate = new Date();
+      updateQuoteUi("offline", "Usando taxa salva");
+      render();
+      fetchDollarRate();
+      setInterval(fetchDollarRate, REFRESH_INTERVAL);
+
+      elements.form.addEventListener("submit", addExpense);
+      elements.pdfFile.addEventListener("change", importPdfStatement);
+      elements.pdfFolder.addEventListener("change", importPdfFolder);
+      elements.connectFolder.addEventListener("click", connectOneDriveFolder);
+      elements.analysisMonth.addEventListener("change", () => {
+        state.activeMonth = elements.analysisMonth.value;
+        render();
+      });
+      elements.categoryFilter.addEventListener("change", () => {
+        state.categoryFilter = elements.categoryFilter.value;
+        render();
+      });
+      elements.refreshRate.addEventListener("click", handleRateRefresh);
+      elements.manualRate.addEventListener("change", applyManualRate);
+      elements.clear.addEventListener("click", clearCurrentMonth);
+      elements.seedDemo.addEventListener("click", seedDemoData);
+      elements.list.addEventListener("click", removeExpense);
+    }
+
+    function loadExpenses() {
+      try {
+        const expenses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        return expenses.map(normalizeExpenseCategory);
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function loadImportedFileKeys() {
+      try {
+        return JSON.parse(localStorage.getItem(IMPORTED_FILES_KEY)) || [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveExpenses() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.expenses));
+    }
+
+    function saveImportedFileKeys() {
+      localStorage.setItem(IMPORTED_FILES_KEY, JSON.stringify([...state.importedFileKeys]));
+    }
+
+    function setImportStatus(message, mode = "neutral") {
+      elements.importStatus.textContent = message;
+      setImportStatusMode(mode);
+    }
+
+    function setImportStatusMode(mode) {
+      elements.importStatus.classList.toggle("success", mode === "success");
+      elements.importStatus.classList.toggle("error", mode === "error");
+      elements.importStatus.classList.toggle("warning", mode === "warning");
+    }
+
+    function setImportResultStatus(summary, diagnostics, mode = "neutral") {
+      const diagnosticList = diagnostics.length
+        ? `<ul>${diagnostics.slice(0, 5).map((item) => `
+          <li><strong>${escapeHtml(item.file)}</strong>${escapeHtml(item.reason)} <em>${escapeHtml(item.action)}</em></li>
+        `).join("")}</ul>`
+        : "";
+
+      const remaining = diagnostics.length > 5
+        ? `<p>Mais ${diagnostics.length - 5} arquivo(s) com detalhe oculto.</p>`
+        : "";
+
+      elements.importStatus.innerHTML = `<strong>${escapeHtml(summary)}</strong>${diagnosticList}${remaining}`;
+      setImportStatusMode(mode);
+    }
+
+    async function fetchDollarRate() {
+      updateQuoteUi("loading", "Buscando...");
+
+      try {
+        const quote = await getLatestDollarRate();
+        state.rate = quote.value;
+        localStorage.setItem(RATE_KEY, String(quote.value));
+        updateQuoteUi("online", "Ao vivo");
+        elements.quoteMeta.textContent = `Atualizado em ${formatTime(new Date())}. Fonte: ${quote.source}.`;
+        render();
+      } catch (error) {
+        updateQuoteUi("offline", "Modo manual");
+        elements.quoteMeta.textContent = "Não foi possível buscar a cotação agora. A taxa salva/manual continua ativa.";
+        render();
+      }
+    }
+
+    async function getLatestDollarRate() {
+      for (const provider of RATE_PROVIDERS) {
+        try {
+          const response = await fetch(provider.url, { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`Falha em ${provider.name}`);
+          }
+
+          const data = await response.json();
+          const value = provider.parse(data);
+          if (!Number.isFinite(value) || value <= 0) {
+            throw new Error(`Cotação inválida em ${provider.name}`);
+          }
+
+          return { value, source: provider.name };
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+
+      throw new Error("Nenhuma cotação disponível");
+    }
+
+    function updateQuoteUi(mode, label) {
+      elements.quoteValue.textContent = brlFormatter.format(state.rate);
+      elements.quoteStatusText.textContent = label;
+      elements.quoteDot.classList.toggle("online", mode === "online");
+    }
+
+    function handleRateRefresh() {
+      if (elements.manualRate.value.trim()) {
+        applyManualRate();
+        return;
+      }
+
+      fetchDollarRate();
+    }
+
+    function applyManualRate() {
+      const rate = parseMoney(elements.manualRate.value);
+      if (!Number.isFinite(rate) || rate <= 0) {
+        elements.manualRate.value = "";
+        return;
+      }
+
+      state.rate = rate;
+      localStorage.setItem(RATE_KEY, String(rate));
+      updateQuoteUi("offline", "Taxa manual");
+      elements.quoteMeta.textContent = `Cotação manual aplicada em ${formatTime(new Date())}.`;
+      elements.manualRate.value = "";
+      render();
+    }
+
+    function addExpense(event) {
+      event.preventDefault();
+
+      const amount = parseMoney(elements.amount.value);
+      const description = elements.description.value.trim();
+      if (!description) {
+        elements.description.focus();
+        return;
+      }
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        elements.amount.focus();
+        return;
+      }
+
+      state.expenses.unshift({
+        id: createId(),
+        description,
+        amount,
+        currency: elements.currency.value,
+        category: elements.category.value,
+        date: elements.date.value || toDateInputValue(new Date()),
+        createdAt: new Date().toISOString()
+      });
+
+      saveExpenses();
+      elements.form.reset();
+      elements.date.valueAsDate = new Date();
+      render();
+    }
+
+    async function importPdfStatement(event) {
+      const file = event.target.files?.[0];
+      if (!file) {
+        return;
+      }
+
+      await importPdfEntries([{ file, path: file.name }], "PDF");
+      elements.pdfFile.value = "";
+    }
+
+    async function importPdfFolder(event) {
+      const files = Array.from(event.target.files || [])
+        .filter(isPdfFile)
+        .map((file) => ({ file, path: file.webkitRelativePath || file.name }));
+
+      if (!files.length) {
+        setImportStatus("Não encontrei PDFs nessa pasta. Selecione a pasta sincronizada do OneDrive que contém suas faturas.", "error");
+        elements.pdfFolder.value = "";
+        return;
+      }
+
+      await importPdfEntries(files, "pasta OneDrive");
+      elements.pdfFolder.value = "";
+    }
+
+    async function connectOneDriveFolder() {
+      if (!window.showDirectoryPicker) {
+        setImportStatus("Seu navegador não permite monitorar uma pasta diretamente. Use o botão 'Importar pasta OneDrive' para importar em lote.", "error");
+        return;
+      }
+
+      try {
+        connectedDirectoryHandle = await window.showDirectoryPicker({ mode: "read" });
+        setImportStatus("Pasta conectada. Vou procurar PDFs novos a cada 30 segundos enquanto esta aba estiver aberta.", "success");
+        await scanConnectedDirectory();
+
+        if (directoryScanTimer) {
+          clearInterval(directoryScanTimer);
+        }
+        directoryScanTimer = setInterval(scanConnectedDirectory, DIRECTORY_SCAN_INTERVAL);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error(error);
+          setImportStatus("Não foi possível conectar a pasta. Verifique a permissão de leitura no navegador.", "error");
+        }
+      }
+    }
+
+    async function scanConnectedDirectory() {
+      if (!connectedDirectoryHandle) {
+        return;
+      }
+
+      try {
+        const files = await collectPdfFilesFromDirectory(connectedDirectoryHandle);
+        await importPdfEntries(files, "pasta OneDrive", { silentWhenNoNewFiles: true });
+      } catch (error) {
+        console.error(error);
+        setImportStatus("Perdi acesso à pasta conectada. Clique em 'Conectar pasta' novamente.", "error");
+        clearInterval(directoryScanTimer);
+        directoryScanTimer = null;
+      }
+    }
+
+    async function collectPdfFilesFromDirectory(directoryHandle, prefix = "") {
+      const files = [];
+      for await (const [name, handle] of directoryHandle.entries()) {
+        const path = prefix ? `${prefix}/${name}` : name;
+        if (handle.kind === "file") {
+          const file = await handle.getFile();
+          if (isPdfFile(file)) {
+            files.push({ file, path });
+          }
+        } else if (handle.kind === "directory") {
+          files.push(...await collectPdfFilesFromDirectory(handle, path));
+        }
+      }
+
+      return files;
+    }
+
+    async function importPdfEntries(entries, source, options = {}) {
+      const newEntries = entries.filter(({ file, path }) => !state.importedFileKeys.has(createFileKey(file, path)));
+      if (!newEntries.length) {
+        if (!options.silentWhenNoNewFiles) {
+          setImportStatus("Nenhum PDF novo para importar. Os arquivos selecionados já foram processados.", "success");
+        }
+        return;
+      }
+
+      setImportStatus(`Lendo ${newEntries.length} PDF(s) de ${source}...`);
+      const importedExpenses = [];
+      const diagnostics = [];
+      let failedFiles = 0;
+      let emptyTextFiles = 0;
+      let unmatchedFiles = 0;
+      let lockedFiles = 0;
+
+      for (const entry of newEntries) {
+        const key = createFileKey(entry.file, entry.path);
+        try {
+          const text = await extractPdfText(entry.file);
+          if (!text.trim()) {
+            emptyTextFiles += 1;
+            diagnostics.push(createPdfDiagnostic(entry.file.name, "empty-text"));
+            continue;
+          }
+
+          const expenses = parseStatementExpenses(text, source);
+          if (expenses.length) {
+            importedExpenses.push(...expenses);
+            state.importedFileKeys.add(key);
+          } else {
+            unmatchedFiles += 1;
+            diagnostics.push(createPdfDiagnostic(entry.file.name, "no-expenses"));
+          }
+        } catch (error) {
+          const diagnostic = classifyPdfError(entry.file.name, error);
+          if (diagnostic.type === "password") {
+            lockedFiles += 1;
+          } else {
+            failedFiles += 1;
+          }
+          diagnostics.push(diagnostic);
+          console.error(error);
+        }
+      }
+
+      if (importedExpenses.length) {
+        state.expenses = [...importedExpenses, ...state.expenses];
+        state.activeMonth = getBestAnalysisMonth(importedExpenses);
+        saveExpenses();
+        saveImportedFileKeys();
+        render();
+      }
+
+      const parts = [];
+      if (importedExpenses.length) {
+        parts.push(`${importedExpenses.length} despesa(s) importada(s)`);
+      }
+      if (emptyTextFiles) {
+        parts.push(`${emptyTextFiles} PDF(s) sem texto selecionável`);
+      }
+      if (unmatchedFiles) {
+        parts.push(`${unmatchedFiles} PDF(s) sem lançamentos reconhecidos`);
+      }
+      if (lockedFiles) {
+        parts.push(`${lockedFiles} PDF(s) com senha ausente/incorreta`);
+      }
+      if (failedFiles) {
+        parts.push(`${failedFiles} PDF(s) com erro de leitura`);
+      }
+
+      if (!parts.length) {
+        setImportResultStatus("Nenhum lançamento novo foi encontrado nos PDFs selecionados.", diagnostics, "error");
+        return;
+      }
+
+      const mode = failedFiles || lockedFiles || emptyTextFiles || unmatchedFiles
+        ? (importedExpenses.length ? "warning" : "error")
+        : "success";
+      setImportResultStatus(parts.join("; ") + ".", diagnostics, mode);
+    }
+
+    function createPdfDiagnostic(file, type, detail = "") {
+      const diagnostics = {
+        "password": {
+          reason: "Senha ausente ou incorreta.",
+          action: "Tente importar novamente e digite exatamente a senha do PDF."
+        },
+        "empty-text": {
+          reason: "O PDF abriu, mas não tem texto selecionável.",
+          action: "Provavelmente é uma imagem/scan; gere uma fatura em PDF com texto ou use OCR antes de importar."
+        },
+        "no-expenses": {
+          reason: "O PDF abriu e tem texto, mas não encontrei linhas com data e valor.",
+          action: "Pode ser um layout de fatura diferente; confira se há compras detalhadas no arquivo."
+        },
+        "invalid": {
+          reason: "Arquivo PDF inválido, corrompido ou incompatível.",
+          action: "Baixe a fatura novamente pelo banco/cartão e tente importar o novo arquivo."
+        },
+        "load": {
+          reason: "Não consegui carregar o arquivo PDF.",
+          action: "Verifique se o arquivo terminou de sincronizar no OneDrive e tente novamente."
+        },
+        "unknown": {
+          reason: detail || "Erro desconhecido ao abrir o PDF.",
+          action: "Tente baixar a fatura novamente; se persistir, o PDF pode usar uma proteção incompatível."
+        }
+      };
+
+      return { file, type, ...diagnostics[type] };
+    }
+
+    function classifyPdfError(file, error) {
+      if (isPasswordError(error)) {
+        return createPdfDiagnostic(file, "password");
+      }
+
+      if (/InvalidPDF|corrupt|invalid/i.test(error?.name || error?.message || "")) {
+        return createPdfDiagnostic(file, "invalid");
+      }
+
+      if (/MissingPDF|UnexpectedResponse|network|fetch|load/i.test(error?.name || error?.message || "")) {
+        return createPdfDiagnostic(file, "load");
+      }
+
+      return createPdfDiagnostic(file, "unknown", formatPdfError(error));
+    }
+
+    function isPdfFile(file) {
+      return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    }
+
+    function createFileKey(file, path) {
+      return `${path || file.name}:${file.size}:${file.lastModified}`;
+    }
+
+    function isPasswordError(error) {
+      return isPdfPasswordException(error) || /senha|password|protected/i.test(error?.message || error?.name || "");
+    }
+
+    function isPdfPasswordException(error) {
+      const responses = window.pdfjsLib?.PasswordResponses || {};
+      return error?.name === "PasswordException"
+        || error?.code === responses.NEED_PASSWORD
+        || error?.code === responses.INCORRECT_PASSWORD;
+    }
+
+    function formatPdfError(error) {
+      if (isPdfPasswordException(error)) {
+        return "senha ausente ou incorreta";
+      }
+
+      return error?.message || error?.name || "erro desconhecido";
+    }
+
+    async function extractPdfText(file) {
+      if (!window.pdfjsLib) {
+        throw new Error("PDF.js não foi carregado");
+      }
+
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf = await loadPdfWithOptionalPassword(file);
+      const pages = [];
+
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+        const page = await pdf.getPage(pageNumber);
+        const content = await page.getTextContent();
+        pages.push(groupPdfTextItems(content.items));
+      }
+
+      return pages.join("\n");
+    }
+
+    async function loadPdfWithOptionalPassword(file) {
+      let password = null;
+      let reason = window.pdfjsLib?.PasswordResponses?.NEED_PASSWORD;
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const data = new Uint8Array(await file.arrayBuffer());
+        try {
+          return await window.pdfjsLib.getDocument({
+            data,
+            password: password || undefined,
+            disableAutoFetch: false,
+            disableStream: false,
+            stopAtErrors: false
+          }).promise;
+        } catch (error) {
+          if (!isPdfPasswordException(error)) {
+            throw error;
+          }
+
+          reason = error.code || reason;
+          password = await requestPdfPassword(file.name, reason);
+          if (!password) {
+            throw new Error("Senha do PDF não informada.");
+          }
+        }
+      }
+
+      throw new Error("Senha do PDF incorreta após 3 tentativas.");
+    }
+
+    function requestPdfPassword(fileName, reason) {
+      const isRetry = reason === window.pdfjsLib?.PasswordResponses?.INCORRECT_PASSWORD;
+      const message = isRetry
+        ? `A senha informada para ${fileName} está incorreta. Digite novamente para importar a fatura.`
+        : `O PDF ${fileName} está protegido. Digite a senha no navegador para importar a fatura.`;
+
+      if (!elements.passwordDialog.showModal) {
+        return Promise.resolve(window.prompt(message));
+      }
+
+      return new Promise((resolve) => {
+        elements.passwordMessage.textContent = message;
+        elements.pdfPassword.value = "";
+
+        const handleClose = () => {
+          const password = elements.passwordDialog.returnValue === "confirm"
+            ? elements.pdfPassword.value
+            : null;
+          elements.pdfPassword.value = "";
+          resolve(password || null);
+        };
+
+        elements.passwordDialog.addEventListener("close", handleClose, { once: true });
+        elements.passwordDialog.showModal();
+        setTimeout(() => elements.pdfPassword.focus(), 0);
+      });
+    }
+
+    function groupPdfTextItems(items) {
+      const rows = [];
+      items.forEach((item) => {
+        const y = Math.round(item.transform[5]);
+        let row = rows.find((candidate) => Math.abs(candidate.y - y) <= 3);
+        if (!row) {
+          row = { y, items: [] };
+          rows.push(row);
+        }
+
+        row.items.push({ x: item.transform[4], text: item.str });
+      });
+
+      return rows
+        .sort((a, b) => b.y - a.y)
+        .map((row) => row.items
+          .sort((a, b) => a.x - b.x)
+          .map((item) => item.text)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim())
+        .filter(Boolean)
+        .join("\n");
+    }
+
+    function parseStatementExpenses(text, source = "PDF") {
+      return text
+        .split(/\n+/)
+        .map((line) => line.replace(/\s+/g, " ").trim())
+        .filter(Boolean)
+        .map((line) => parseStatementLine(line, source))
+        .filter(Boolean);
+    }
+
+    function parseStatementLine(line, source) {
+      const normalizedLine = normalizeStatementLine(line);
+      if (shouldIgnoreStatementLine(normalizedLine)) {
+        return null;
+      }
+
+      const dateMatch = normalizedLine.match(/\b(\d{1,2})[\/. -](\d{1,2})(?:[\/. -](\d{2,4}))?\b/);
+      if (!dateMatch) {
+        return null;
+      }
+
+      const amountMatches = [...normalizedLine.matchAll(/(?:R\$\s*|US\$\s*|USD\s*)?-?\d{1,3}(?:[.\s]\d{3})*(?:,\d{2}|\.\d{2})|-?\d+(?:,\d{2}|\.\d{2})/gi)];
+      if (!amountMatches.length) {
+        return null;
+      }
+
+      const amountToken = amountMatches.at(-1)[0];
+      const amount = parseMoney(amountToken);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return null;
+      }
+
+      const description = cleanStatementDescription(normalizedLine, dateMatch[0], amountToken);
+      if (description.length < 3 || shouldIgnoreStatementLine(description)) {
+        return null;
+      }
+
+      return {
+        id: createId(),
+        description,
+        amount,
+        currency: /US\$|USD|D[ÓO]LAR/i.test(normalizedLine) ? "USD" : "BRL",
+        category: inferCategory(description),
+        date: parseStatementDate(dateMatch),
+        createdAt: new Date().toISOString(),
+        importedFrom: source
+      };
+    }
+
+    function normalizeStatementLine(line) {
+      return line
+        .replace(/[🔊🔉🔈]/g, " ")
+        .replace(/[\u0000-\u001F\u007F]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function cleanStatementDescription(line, dateToken, amountToken) {
+      return line
+        .replace(dateToken, " ")
+        .replace(amountToken, " ")
+        .replace(/\b\d{1,2}\/\d{1,2}\b/g, " ")
+        .replace(/R\$|US\$|USD/gi, " ")
+        .replace(/\b(parcela|compra|despesas|data|descrição|descricao|nacional|internacional|credito|crédito|debito|débito)\b/gi, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 60);
+    }
+
+    function shouldIgnoreStatementLine(line) {
+      return /\b(total|pagamento|vencimento|limite|saldo|fatura|anuidade|encargos|juros|iof|estorno|credito|crédito|compra\s+data|descrição|descricao|parcela)\b/i.test(line);
+    }
+
+    function normalizeExpenseCategory(expense) {
+      const category = categoryList.includes(expense.category)
+        ? expense.category
+        : inferCategory(expense.description || "");
+      return { ...expense, category };
+    }
+
+    function inferCategory(description) {
+      const normalized = normalizeText(description);
+      for (const [category, keywords] of Object.entries(categoryKeywords)) {
+        if (keywords.some((keyword) => keywordMatches(normalized, normalizeText(keyword)))) {
+          return category;
+        }
+      }
+
+      return "Outros";
+    }
+
+    function keywordMatches(text, keyword) {
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(text);
+    }
+
+    function parseStatementDate(match) {
+      const now = new Date();
+      const day = Number(match[1]);
+      const month = Number(match[2]);
+      let year = match[3] ? Number(match[3]) : now.getFullYear();
+      if (year < 100) {
+        year += 2000;
+      }
+
+      // Santander statements often omit the year. If a May invoice contains
+      // a December purchase, it belongs to the previous calendar year.
+      if (!match[3] && month > now.getMonth() + 1) {
+        year -= 1;
+      }
+
+      return toDateInputValue(new Date(year, month - 1, day));
+    }
+
+    function removeExpense(event) {
+      const button = event.target.closest("[data-remove]");
+      if (!button) {
+        return;
+      }
+
+      state.expenses = state.expenses.filter((expense) => expense.id !== button.dataset.remove);
+      saveExpenses();
+      render();
+    }
+
+    function clearCurrentMonth() {
+      const activeMonth = state.activeMonth;
+      const removedCount = state.expenses.filter((expense) => monthKey(expense.date) === activeMonth).length;
+      if (!removedCount || !confirm(`Remover ${removedCount} despesa(s) de ${formatMonthKey(activeMonth)}?`)) {
+        return;
+      }
+
+      state.expenses = state.expenses.filter((expense) => monthKey(expense.date) !== activeMonth);
+      state.activeMonth = getDefaultAnalysisMonth(state.expenses);
+      saveExpenses();
+      render();
+    }
+
+    function seedDemoData() {
+      const today = new Date();
+      const samples = [
+        ["Aluguel", 2200, "BRL", "Moradia", 0, 2],
+        ["Supermercado", 460.35, "BRL", "Mercado", 0, 5],
+        ["Spotify", 10.99, "USD", "Assinaturas", 0, 8],
+        ["Uber", 72.8, "BRL", "Transporte", 0, 13],
+        ["Curso online", 49, "USD", "Lazer", 0, 18],
+        ["Farmácia", 132.9, "BRL", "Saúde", 0, 21],
+        ["Academia", 129.9, "BRL", "Saúde", 1, 4],
+        ["Viagem", 180, "USD", "Lazer", 2, 11],
+        ["Internet", 119.9, "BRL", "Moradia", 3, 7],
+        ["Restaurante", 245.5, "BRL", "Fast food", 4, 16],
+        ["Software", 29, "USD", "Assinaturas", 5, 9]
+      ];
+
+      const demoExpenses = samples.map(([description, amount, currency, category, monthOffset, day]) => {
+        const date = new Date(today.getFullYear(), today.getMonth() - monthOffset, day);
+        return {
+          id: createId(),
+          description,
+          amount,
+          currency,
+          category,
+          date: toDateInputValue(date),
+          createdAt: new Date().toISOString()
+        };
+      });
+
+      state.expenses = [...demoExpenses, ...state.expenses];
+      state.activeMonth = getBestAnalysisMonth(demoExpenses);
+      saveExpenses();
+      render();
+    }
+
+    function render() {
+      renderAnalysisMonthOptions();
+      renderCategoryFilterOptions();
+      const monthly = getActiveMonthExpenses();
+      const visibleExpenses = getFilteredExpenses(monthly);
+      const totals = visibleExpenses.reduce((acc, expense) => {
+        const brlValue = toBrl(expense);
+        acc.brl += brlValue;
+        acc.usd += expense.currency === "USD" ? expense.amount : 0;
+        return acc;
+      }, { brl: 0, usd: 0 });
+
+      const categoryLabel = state.categoryFilter === "Todas" ? "todas as categorias" : state.categoryFilter;
+      elements.monthLabel.textContent = `Resumo de ${formatMonthKey(state.activeMonth)} - ${categoryLabel}`;
+      elements.bankingBalance.textContent = brlFormatter.format(totals.brl);
+      elements.bankingMonth.textContent = `${formatMonthKey(state.activeMonth)} · ${categoryLabel}`;
+      elements.totalBrl.textContent = brlFormatter.format(totals.brl);
+      elements.totalBrlDetail.textContent = `Gastos de ${categoryLabel}`;
+      elements.totalUsd.textContent = usdFormatter.format(totals.usd);
+      elements.expenseCount.textContent = String(visibleExpenses.length);
+      elements.expenseCountDetail.textContent = `${visibleExpenses.length} lançamento(s) exibido(s)`;
+      elements.quoteValue.textContent = brlFormatter.format(state.rate);
+      renderCategoryInsight(monthly);
+
+      renderExpenses(visibleExpenses);
+      drawCategoryBarChart(monthly);
+      drawBarChart(visibleExpenses);
+      drawDonutChart(monthly);
+    }
+
+    function renderCategoryInsight(expenses) {
+      const [topCategory] = getCategoryBreakdown(expenses);
+      if (!topCategory) {
+        elements.topCategory.textContent = "--";
+        elements.topCategoryDetail.textContent = "Importe ou adicione despesas para analisar";
+        elements.categoryInsight.textContent = "Ainda não há dados suficientes para identificar a principal categoria.";
+        return;
+      }
+
+      elements.topCategory.textContent = topCategory.category;
+      elements.topCategoryDetail.textContent = `${brlFormatter.format(topCategory.value)} em ${formatMonthKey(state.activeMonth)}`;
+      const filterText = state.categoryFilter === "Todas"
+        ? "Você está vendo todas as categorias."
+        : `Você filtrou ${state.categoryFilter}, mas a maior categoria do mês inteiro é ${topCategory.category}.`;
+      elements.categoryInsight.textContent = `${filterText} A categoria que mais consumiu dinheiro em ${formatMonthKey(state.activeMonth)} foi ${topCategory.category}: ${brlFormatter.format(topCategory.value)}, equivalente a ${topCategory.percent}% do total do mês.`;
+    }
+
+    function getCategoryBreakdown(expenses) {
+      const total = expenses.reduce((sum, expense) => sum + toBrl(expense), 0);
+      const categories = expenses.reduce((acc, expense) => {
+        acc[expense.category] = (acc[expense.category] || 0) + toBrl(expense);
+        return acc;
+      }, {});
+
+      return Object.entries(categories)
+        .map(([category, value]) => ({
+          category,
+          value,
+          percent: total ? Math.round((value / total) * 100) : 0
+        }))
+        .sort((a, b) => b.value - a.value);
+    }
+
+    function renderExpenses(expenses) {
+      if (!expenses.length) {
+        elements.list.innerHTML = `
+          <div class="empty">
+            Nenhuma despesa em ${formatMonthKey(state.activeMonth)}. Escolha outro mês, importe uma fatura ou adicione lançamentos.
+          </div>
+        `;
+        return;
+      }
+
+      elements.list.innerHTML = expenses.map((expense) => {
+        const original = expense.currency === "USD"
+          ? usdFormatter.format(expense.amount)
+          : brlFormatter.format(expense.amount);
+        const converted = expense.currency === "USD"
+          ? `<span class="converted">${brlFormatter.format(toBrl(expense))}</span>`
+          : `<span class="converted">${usdFormatter.format(expense.amount / state.rate)}</span>`;
+
+        return `
+          <article class="expense">
+            <div>
+              <div class="expense-title">${escapeHtml(expense.description)}</div>
+              <div class="expense-details">
+                <span class="pill">${escapeHtml(expense.category)}</span>
+                <span>${formatDate(expense.date)}</span>
+                <span>${expense.currency}</span>
+              </div>
+            </div>
+            <div class="amount">
+              ${original}
+              ${converted}
+            </div>
+            <button class="icon-button" type="button" data-remove="${expense.id}" aria-label="Remover ${escapeHtml(expense.description)}">×</button>
+          </article>
+        `;
+      }).join("");
+    }
+
+
+    function drawCategoryBarChart(expenses) {
+      const canvas = elements.monthlyChart;
+      const context = setupCanvas(canvas);
+      const { width, height } = canvas.getBoundingClientRect();
+      context.clearRect(0, 0, width, height);
+
+      const entries = getCategoryBreakdown(expenses);
+      elements.categoryChartKicker.textContent = `${formatMonthKey(state.activeMonth)} em BRL`;
+      const padding = { top: 24, right: 18, bottom: 62, left: 54 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const max = Math.max(...entries.map((entry) => entry.value), 1);
+
+      context.strokeStyle = "rgba(148, 163, 184, 0.16)";
+      context.lineWidth = 1;
+      for (let step = 0; step <= 3; step += 1) {
+        const y = padding.top + plotHeight - (plotHeight / 3) * step;
+        context.beginPath();
+        context.moveTo(padding.left, y);
+        context.lineTo(padding.left + plotWidth, y);
+        context.stroke();
+      }
+
+      if (!entries.length) {
+        context.fillStyle = "#94a3b8";
+        context.font = "14px Inter, system-ui, sans-serif";
+        context.textAlign = "center";
+        context.fillText("Sem gastos categorizados neste mês", width / 2, height / 2);
+        return;
+      }
+
+      const gap = 10;
+      const barWidth = Math.max(18, plotWidth / entries.length - gap);
+      entries.forEach((entry, index) => {
+        const barHeight = (entry.value / max) * plotHeight;
+        const x = padding.left + index * (plotWidth / entries.length) + gap / 2;
+        const y = padding.top + plotHeight - barHeight;
+        const gradient = context.createLinearGradient(0, y, 0, padding.top + plotHeight);
+        gradient.addColorStop(0, categoryColors[entry.category] || categoryColors.Outros);
+        gradient.addColorStop(1, "rgba(56, 189, 248, 0.14)");
+        context.fillStyle = gradient;
+        roundRect(context, x, y, barWidth, barHeight || 3, 9);
+        context.fill();
+
+        context.save();
+        context.translate(x + barWidth / 2, height - 16);
+        context.rotate(-Math.PI / 5);
+        context.fillStyle = "#cbd5e1";
+        context.font = "700 11px Inter, system-ui, sans-serif";
+        context.textAlign = "right";
+        context.fillText(entry.category, 0, 0);
+        context.restore();
+      });
+
+      context.fillStyle = "#94a3b8";
+      context.font = "12px Inter, system-ui, sans-serif";
+      context.textAlign = "left";
+      context.fillText(brlFormatter.format(max), 8, padding.top + 4);
+    }
+
+    function drawBarChart(expenses) {
+      const canvas = elements.barChart;
+      const context = setupCanvas(canvas);
+      const { width, height } = canvas.getBoundingClientRect();
+      context.clearRect(0, 0, width, height);
+
+      const padding = { top: 24, right: 18, bottom: 34, left: 42 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const days = daysInMonthKey(state.activeMonth);
+      const totalsByDay = Array.from({ length: days }, () => 0);
+
+      expenses.forEach((expense) => {
+        const day = new Date(`${expense.date}T00:00:00`).getDate();
+        totalsByDay[day - 1] += toBrl(expense);
+      });
+
+      const max = Math.max(...totalsByDay, 1);
+      context.strokeStyle = "rgba(148, 163, 184, 0.18)";
+      context.lineWidth = 1;
+      context.beginPath();
+      context.moveTo(padding.left, padding.top);
+      context.lineTo(padding.left, padding.top + plotHeight);
+      context.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+      context.stroke();
+
+      const gap = 3;
+      const barWidth = Math.max(3, plotWidth / days - gap);
+      totalsByDay.forEach((value, index) => {
+        const barHeight = (value / max) * plotHeight;
+        const x = padding.left + index * (plotWidth / days);
+        const y = padding.top + plotHeight - barHeight;
+        const gradient = context.createLinearGradient(0, y, 0, padding.top + plotHeight);
+        gradient.addColorStop(0, "#38bdf8");
+        gradient.addColorStop(1, "rgba(56, 189, 248, 0.18)");
+        context.fillStyle = gradient;
+        roundRect(context, x, y, barWidth, barHeight || 2, 5);
+        context.fill();
+      });
+
+      context.fillStyle = "#94a3b8";
+      context.font = "12px Inter, system-ui, sans-serif";
+      context.fillText("1", padding.left, height - 12);
+      context.fillText(String(days), width - padding.right - 18, height - 12);
+      context.fillText(brlFormatter.format(max), 8, padding.top + 4);
+    }
+
+    function drawDonutChart(expenses) {
+      const canvas = elements.donutChart;
+      const context = setupCanvas(canvas);
+      const { width, height } = canvas.getBoundingClientRect();
+      context.clearRect(0, 0, width, height);
+
+      const totalsByCategory = expenses.reduce((acc, expense) => {
+        acc[expense.category] = (acc[expense.category] || 0) + toBrl(expense);
+        return acc;
+      }, {});
+
+      const entries = Object.entries(totalsByCategory).sort((a, b) => b[1] - a[1]);
+      const total = entries.reduce((sum, [, value]) => sum + value, 0);
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = Math.min(width, height) * 0.34;
+
+      if (!entries.length) {
+        context.strokeStyle = "rgba(148, 163, 184, 0.22)";
+        context.lineWidth = 26;
+        context.beginPath();
+        context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        context.stroke();
+        drawCenterLabel(context, centerX, centerY, "Sem dados", "R$ 0,00");
+        elements.legend.innerHTML = "";
+        return;
+      }
+
+      let startAngle = -Math.PI / 2;
+      entries.forEach(([category, value]) => {
+        const slice = (value / total) * Math.PI * 2;
+        context.strokeStyle = categoryColors[category] || categoryColors.Outros;
+        context.lineWidth = 28;
+        context.lineCap = "round";
+        context.beginPath();
+        context.arc(centerX, centerY, radius, startAngle, startAngle + slice - 0.04);
+        context.stroke();
+        startAngle += slice;
+      });
+
+      drawCenterLabel(context, centerX, centerY, "Total", brlFormatter.format(total));
+      elements.legend.innerHTML = entries.map(([category, value]) => `
+        <span class="legend-item">
+          <span class="swatch" style="background:${categoryColors[category] || categoryColors.Outros}"></span>
+          ${escapeHtml(category)} (${Math.round((value / total) * 100)}%)
+        </span>
+      `).join("");
+    }
+
+    function drawCenterLabel(context, x, y, label, value) {
+      context.textAlign = "center";
+      context.fillStyle = "#94a3b8";
+      context.font = "12px Inter, system-ui, sans-serif";
+      context.fillText(label, x, y - 6);
+      context.fillStyle = "#e5edf8";
+      context.font = "700 18px Inter, system-ui, sans-serif";
+      context.fillText(value, x, y + 18);
+    }
+
+    function setupCanvas(canvas) {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+      const context = canvas.getContext("2d");
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      return context;
+    }
+
+    function getActiveMonthExpenses() {
+      return state.expenses
+        .filter((expense) => monthKey(expense.date) === state.activeMonth)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    function getFilteredExpenses(expenses) {
+      if (state.categoryFilter === "Todas") {
+        return expenses;
+      }
+
+      return expenses.filter((expense) => expense.category === state.categoryFilter);
+    }
+
+    function renderCategoryFilterOptions() {
+      const available = new Set(getActiveMonthExpenses().map((expense) => expense.category));
+      const options = ["Todas", ...categoryList.filter((category) => available.has(category))];
+      if (state.categoryFilter !== "Todas" && !available.has(state.categoryFilter)) {
+        state.categoryFilter = "Todas";
+      }
+
+      elements.categoryFilter.innerHTML = options.map((category) => `
+        <option value="${category}" ${category === state.categoryFilter ? "selected" : ""}>${category === "Todas" ? "Todas as categorias" : category}</option>
+      `).join("");
+    }
+
+    function renderAnalysisMonthOptions() {
+      const months = getAvailableMonths();
+      elements.analysisMonth.innerHTML = months.map((key) => `
+        <option value="${key}" ${key === state.activeMonth ? "selected" : ""}>${formatMonthKey(key)}</option>
+      `).join("");
+    }
+
+    function getAvailableMonths() {
+      const months = new Set([monthKey(new Date()), state.activeMonth]);
+      state.expenses.forEach((expense) => months.add(monthKey(expense.date)));
+      return [...months].filter(Boolean).sort().reverse();
+    }
+
+    function getDefaultAnalysisMonth(expenses) {
+      const currentMonth = monthKey(new Date());
+      if (expenses.some((expense) => monthKey(expense.date) === currentMonth)) {
+        return currentMonth;
+      }
+
+      return getBestAnalysisMonth(expenses) || currentMonth;
+    }
+
+    function getBestAnalysisMonth(expenses) {
+      const totalsByMonth = expenses.reduce((acc, expense) => {
+        const key = monthKey(expense.date);
+        acc[key] = (acc[key] || 0) + toBrl(expense);
+        return acc;
+      }, {});
+
+      return Object.entries(totalsByMonth)
+        .sort((a, b) => b[0].localeCompare(a[0]) || b[1] - a[1])[0]?.[0] || null;
+    }
+
+    function getLastMonths(count) {
+      const now = new Date();
+      return Array.from({ length: count }, (_, index) => {
+        const date = new Date(now.getFullYear(), now.getMonth() - (count - index - 1), 1);
+        return {
+          key: monthKey(date),
+          label: shortMonthFormatter.format(date).replace(".", "")
+        };
+      });
+    }
+
+    function toBrl(expense) {
+      return expense.currency === "USD" ? expense.amount * state.rate : expense.amount;
+    }
+
+    function createId() {
+      return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function parseMoney(value) {
+      const raw = String(value).trim().replace(/[^\d,.-]/g, "");
+      const hasComma = raw.includes(",");
+      const hasDot = raw.includes(".");
+      let normalized = raw;
+
+      if (hasComma && hasDot) {
+        normalized = raw.lastIndexOf(",") > raw.lastIndexOf(".")
+          ? raw.replace(/\./g, "").replace(",", ".")
+          : raw.replace(/,/g, "");
+      } else if (hasComma) {
+        normalized = raw.replace(",", ".");
+      }
+
+      return Number(normalized);
+    }
+
+    function monthKey(value) {
+      const date = value instanceof Date ? value : new Date(`${value}T00:00:00`);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function daysInMonthKey(key) {
+      const [year, month] = key.split("-").map(Number);
+      return new Date(year, month, 0).getDate();
+    }
+
+    function formatMonthKey(key) {
+      const [year, month] = key.split("-").map(Number);
+      return monthFormatter.format(new Date(year, month - 1, 1));
+    }
+
+    function toDateInputValue(date) {
+      return date.toISOString().slice(0, 10);
+    }
+
+    function formatDate(value) {
+      return new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "short"
+      }).format(new Date(`${value}T00:00:00`));
+    }
+
+    function formatTime(value) {
+      return new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(value);
+    }
+
+    function normalizeText(value) {
+      return String(value)
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .toLowerCase();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function roundRect(context, x, y, width, height, radius) {
+      const safeRadius = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + safeRadius, y);
+      context.arcTo(x + width, y, x + width, y + height, safeRadius);
+      context.arcTo(x + width, y + height, x, y + height, safeRadius);
+      context.arcTo(x, y + height, x, y, safeRadius);
+      context.arcTo(x, y, x + width, y, safeRadius);
+      context.closePath();
+    }
+
+    window.addEventListener("resize", render);
+  </script>
+</body>
+</html>
