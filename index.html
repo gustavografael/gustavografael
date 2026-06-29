@@ -248,7 +248,25 @@
             </p>
           </div>
 
-          <div class="insights-grid">
+          <div class="insights-grid insights-grid--expanded">
+            <article class="mini-panel route-map-panel">
+              <h3>Mapa da rota</h3>
+              <p class="vendor-panel__note">Distância geográfica aproximada entre os saltos com coordenadas conhecidas.</p>
+              <div class="route-map" id="route-map" aria-label="Mapa geográfico da rota">
+                <p class="route-map__empty">O mapa aparece após traçar a rota.</p>
+              </div>
+            </article>
+
+            <article class="mini-panel route-summary-panel">
+              <h3>Resumo da rota</h3>
+              <dl class="route-summary" id="route-summary">
+                <div><dt>Saltos</dt><dd>—</dd></div>
+                <div><dt>Distância</dt><dd>—</dd></div>
+                <div><dt>Maior latência</dt><dd>—</dd></div>
+                <div><dt>Probe</dt><dd>—</dd></div>
+              </dl>
+            </article>
+
             <article class="mini-panel">
               <h3>Log da jornada</h3>
               <ol class="log-list" id="journey-log" aria-live="polite">

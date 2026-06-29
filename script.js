@@ -31,6 +31,8 @@ const packetReadiness = document.querySelector("#packet-readiness");
 const routeStatus = document.querySelector("#route-status");
 const routePlaceholder = document.querySelector("#route-placeholder");
 const vendorList = document.querySelector("#vendor-list");
+const routeMap = document.querySelector("#route-map");
+const routeSummary = document.querySelector("#route-summary");
 const macOrigemInput = document.querySelector("#mac-origem");
 const macDestinoInput = document.querySelector("#mac-destino");
 const macOrigemFeedback = document.querySelector("#mac-origem-feedback");
@@ -53,8 +55,13 @@ const networkState = {
   countryCode: null,
   countryName: null,
   city: null,
+  region: null,
+  latitude: null,
+  longitude: null,
   tracedDestination: null,
   probeLabel: null,
+  lastPath: [],
+  lastSummary: null,
 };
 
 let activeTimer = null;
@@ -146,8 +153,16 @@ function renderVendorBadgeFromHop(node, hop) {
     return;
   }
 
-  badge.textContent = `${hop.org} · ${hop.deviceLabel || "rede"}`;
+  badge.textContent = [hop.asn, hop.org, hop.role].filter(Boolean).join(" · ") || "Operador desconhecido";
   badge.classList.add(`vendor-badge--${hop.deviceType || "unknown"}`);
+}
+
+function formatHopRtt(hop) {
+  return window.RouteTracer.formatRtt(hop.rttStats || {});
+}
+
+function formatHopLocation(hop) {
+  return window.RouteTracer.formatLocation(hop);
 }
 
 function renderVendorListFromPath(path) {
@@ -156,21 +171,34 @@ function renderVendorListFromPath(path) {
   path.forEach((hop, index) => {
     const node = nodes[index];
     const item = document.createElement("li");
+    if (hop.isSlowest) item.classList.add("vendor-list__item--slow");
 
     const name = document.createElement("strong");
-    name.textContent = hop.label;
+    name.textContent = `${hop.label}${hop.isSlowest ? " · maior latência" : ""}`;
 
     const address = document.createElement("span");
     address.className = "vendor-list__mac";
-    address.textContent = hop.ip;
+    address.textContent = [hop.ip, hop.hostname].filter(Boolean).join(" · ");
+
+    const meta = document.createElement("span");
+    meta.className = "vendor-list__meta";
+    meta.textContent = [
+      hop.asn,
+      hop.org,
+      hop.role,
+      formatHopLocation(hop),
+    ].filter(Boolean).join(" · ");
 
     const detail = document.createElement("span");
     detail.className = "vendor-list__detail";
-    detail.textContent = hop.org
-      ? `${hop.org} — ${hop.deviceLabel}${hop.rtt != null ? ` · ${hop.rtt.toFixed(1)} ms` : ""}`
-      : "Aguardando identificação do operador";
+    detail.textContent = [
+      `RTT ${formatHopRtt(hop)}`,
+      hop.distanceKm != null ? `trecho ${hop.distanceKm.toFixed(0)} km` : null,
+      hop.accumulatedKm != null && hop.accumulatedKm > 0 ? `acumulado ${hop.accumulatedKm.toFixed(0)} km` : null,
+      hop.roleHint,
+    ].filter(Boolean).join(" · ");
 
-    item.append(name, address, detail);
+    item.append(name, address, meta, detail);
     vendorList.append(item);
     if (node) renderVendorBadgeFromHop(node, hop);
   });
@@ -178,13 +206,20 @@ function renderVendorListFromPath(path) {
 
 function getHopVendorMessage(stepIndex) {
   const hop = route[stepIndex]?.hop;
-  if (!hop?.org) return "";
-  return ` Operador: ${hop.org} (${hop.deviceLabel || "rede"}).`;
+  if (!hop) return "";
+  const parts = [
+    hop.org ? `Operador: ${hop.org}` : null,
+    hop.asn,
+    hop.role,
+    formatHopLocation(hop) !== "Localização indisponível" ? formatHopLocation(hop) : null,
+    hop.rttStats?.avg != null ? `RTT ${formatHopRtt(hop)}` : null,
+  ].filter(Boolean);
+  return parts.length ? ` ${parts.join(" · ")}.` : "";
 }
 
 function createNodeElement(hop, index, total) {
   const article = document.createElement("article");
-  article.className = `node${index === 0 ? " node--active" : ""}`;
+  article.className = `node${index === 0 ? " node--active" : ""}${hop.isSlowest ? " node--slowest" : ""}`;
   article.dataset.node = String(index);
   article.dataset.ip = hop.ip;
   if (hop.org) article.dataset.org = hop.org;
@@ -200,10 +235,16 @@ function createNodeElement(hop, index, total) {
   if (index === 0) details.id = "node-local-ip";
   if (index === total - 1) details.id = "node-dest-ip";
 
-  const lines = [hop.ip];
-  if (hop.hostname) lines.push(hop.hostname);
-  if (hop.org) lines.push(hop.org);
-  if (hop.rtt != null) lines.push(`${hop.rtt.toFixed(1)} ms`);
+  const lines = [
+    hop.ip,
+    hop.hostname,
+    hop.asn,
+    hop.org,
+    hop.role,
+    formatHopLocation(hop),
+    hop.rttStats?.avg != null ? `RTT ${formatHopRtt(hop)}` : null,
+    hop.distanceKm != null ? `+${hop.distanceKm.toFixed(0)} km` : null,
+  ].filter(Boolean);
   details.innerHTML = lines.join("<br />");
 
   const badge = document.createElement("span");
@@ -212,6 +253,95 @@ function createNodeElement(hop, index, total) {
 
   article.append(icon, title, details, badge);
   return article;
+}
+
+function projectMapPoints(path, width = 760, height = 220, padding = 28) {
+  const geoPoints = path
+    .map((hop, index) => ({ hop, index }))
+    .filter(({ hop }) => hop.latitude != null && hop.longitude != null);
+
+  if (geoPoints.length < 2) return null;
+
+  const lats = geoPoints.map(({ hop }) => hop.latitude);
+  const lons = geoPoints.map(({ hop }) => hop.longitude);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLon = Math.min(...lons);
+  const maxLon = Math.max(...lons);
+  const latSpan = Math.max(maxLat - minLat, 0.8);
+  const lonSpan = Math.max(maxLon - minLon, 0.8);
+
+  return geoPoints.map(({ hop, index }) => ({
+    hop,
+    index,
+    x: padding + ((hop.longitude - minLon) / lonSpan) * (width - padding * 2),
+    y: padding + (1 - (hop.latitude - minLat) / latSpan) * (height - padding * 2),
+  }));
+}
+
+function renderRouteMap(path) {
+  if (!routeMap) return;
+
+  const points = projectMapPoints(path);
+  if (!points) {
+    routeMap.innerHTML = '<p class="route-map__empty">Sem coordenadas suficientes para desenhar o mapa desta rota.</p>';
+    return;
+  }
+
+  const width = 760;
+  const height = 220;
+  const polyline = points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+
+  const markers = points
+    .map(({ hop, index, x, y }) => {
+      const fill = hop.isSlowest ? "#ff8f9d" : index === 0 ? "#7dffb2" : index === points.length - 1 ? "#9db4ff" : "#c4b5fd";
+      const title = `${hop.label} (${hop.ip})`;
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7" fill="${fill}" stroke="#0b1020" stroke-width="2"><title>${title}</title></circle>`;
+    })
+    .join("");
+
+  const labels = points
+    .filter((_, index) => index === 0 || index === points.length - 1 || points[index].hop.isSlowest)
+    .map(({ hop, x, y }) => `<text x="${x.toFixed(1)}" y="${(y - 12).toFixed(1)}" text-anchor="middle" class="route-map__label">${hop.label}</text>`)
+    .join("");
+
+  routeMap.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" class="route-map__svg" role="img" aria-label="Mapa geográfico da rota">
+      <defs>
+        <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#8b5cf6" />
+          <stop offset="100%" stop-color="#43d7ff" />
+        </linearGradient>
+      </defs>
+      <polyline points="${polyline}" fill="none" stroke="url(#routeGradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      ${markers}
+      ${labels}
+    </svg>`;
+}
+
+function renderRouteSummary(path, summary, probeLabel) {
+  if (!routeSummary) return;
+
+  const countries = [...new Set(path.map((hop) => hop.country).filter(Boolean))];
+  const slowHop = path[summary?.slowestHopIndex];
+  const entries = [
+    ["Saltos", `${summary?.hopCount ?? path.length - 1}`],
+    ["Distância acumulada", summary?.totalDistanceKm ? `${summary.totalDistanceKm.toFixed(0)} km` : "—"],
+    ["Países na rota", countries.length ? countries.join(", ") : "—"],
+    [
+      "Maior latência",
+      slowHop?.rttStats?.avg != null
+        ? `${slowHop.label} (${slowHop.ip}) · ${slowHop.rttStats.avg.toFixed(1)} ms`
+        : "—",
+    ],
+    ["Probe do teste", probeLabel || "—"],
+    ["ASN do probe", summary?.probeAsn || "—"],
+    ["Rede do probe", summary?.probeNetwork || "—"],
+  ];
+
+  routeSummary.innerHTML = entries
+    .map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`)
+    .join("");
 }
 
 function rebuildRouteFromPath(path) {
@@ -223,7 +353,7 @@ function rebuildRouteFromPath(path) {
   }));
 }
 
-function rebuildNetworkMap(path) {
+function rebuildNetworkMap(path, summary, probeLabel) {
   if (routePlaceholder) routePlaceholder.remove();
 
   networkMap.querySelectorAll(".node").forEach((node) => node.remove());
@@ -242,6 +372,18 @@ function rebuildNetworkMap(path) {
 
   rebuildRouteFromPath(path);
   renderVendorListFromPath(path);
+  renderRouteMap(path);
+  renderRouteSummary(path, summary, probeLabel);
+}
+
+async function fallbackLookupIp(ip) {
+  const response = await fetch(
+    `https://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,countryCode,regionName,city,lat,lon,isp,org,as,query,timezone`,
+  );
+  if (!response.ok) throw new Error("lookup-failed");
+  const data = await response.json();
+  if (data.status !== "success") throw new Error(data.message || "lookup-failed");
+  return data;
 }
 
 async function enrichUserGeo() {
@@ -252,9 +394,22 @@ async function enrichUserGeo() {
     networkState.countryCode = geo.country_code || "BR";
     networkState.countryName = geo.country_name || networkState.countryCode;
     networkState.city = geo.city || null;
+    networkState.region = geo.region || null;
+    networkState.latitude = geo.latitude ?? null;
+    networkState.longitude = geo.longitude ?? null;
   } catch {
-    networkState.countryCode = "BR";
-    networkState.countryName = "Brasil";
+    try {
+      const geo = await fallbackLookupIp(networkState.publicIp);
+      networkState.countryCode = geo.countryCode || "BR";
+      networkState.countryName = geo.country || networkState.countryCode;
+      networkState.city = geo.city || null;
+      networkState.region = geo.regionName || null;
+      networkState.latitude = geo.lat ?? null;
+      networkState.longitude = geo.lon ?? null;
+    } catch {
+      networkState.countryCode = "BR";
+      networkState.countryName = "Brasil";
+    }
   }
 }
 
@@ -273,15 +428,21 @@ async function traceAndBuildRoute(destinationIp) {
     networkState,
     networkState.localIp || ipOrigemInput.value.trim() || "192.168.1.10",
     lookupIp,
+    fallbackLookupIp,
     isPrivateIpv4,
   );
 
   networkState.tracedDestination = destinationIp;
   networkState.probeLabel = built.probeLabel;
-  rebuildNetworkMap(built.path);
+  networkState.lastPath = built.path;
+  networkState.lastSummary = built.summary;
+  rebuildNetworkMap(built.path, built.summary, built.probeLabel);
 
   if (routeStatus) {
-    routeStatus.textContent = `Traceroute real via ${built.probeLabel}. ${built.path.length - 1} saltos até ${destinationIp}.`;
+    const distance = built.summary.totalDistanceKm
+      ? ` · ~${built.summary.totalDistanceKm.toFixed(0)} km`
+      : "";
+    routeStatus.textContent = `Traceroute real via ${built.probeLabel}. ${built.summary.hopCount} saltos até ${destinationIp}${distance}.`;
   }
 
   return built;
@@ -886,6 +1047,14 @@ resetButton.addEventListener("click", () => {
   if (routeStatus) {
     routeStatus.textContent = "Informe o IP destino e clique em Traçar rota para descobrir os saltos reais.";
   }
+  if (routeMap) {
+    routeMap.innerHTML = '<p class="route-map__empty">O mapa aparece após traçar a rota.</p>';
+  }
+  if (routeSummary) {
+    routeSummary.innerHTML = '<div><dt>Saltos</dt><dd>—</dd></div><div><dt>Distância</dt><dd>—</dd></div><div><dt>Maior latência</dt><dd>—</dd></div><div><dt>Probe</dt><dd>—</dd></div>';
+  }
+  networkState.lastPath = [];
+  networkState.lastSummary = null;
   packet.classList.remove("is-visible");
   packet.style.left = "7%";
   score.textContent = "0";

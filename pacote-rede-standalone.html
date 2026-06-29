@@ -796,6 +796,90 @@ input::placeholder {
   min-height: 0;
 }
 
+.insights-grid--expanded {
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+}
+
+.route-map-panel,
+.route-summary-panel,
+.vendor-panel {
+  grid-column: 1 / -1;
+}
+
+.route-map {
+  min-height: 240px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(8, 12, 28, 0.55);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.route-map__empty {
+  margin: 0;
+  padding: 48px 12px;
+  text-align: center;
+  color: #a8a0d8;
+}
+
+.route-map__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.route-map__label {
+  fill: #d4cff8;
+  font-size: 11px;
+}
+
+.route-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.route-summary div {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(8, 12, 28, 0.55);
+}
+
+.route-summary dt {
+  margin-bottom: 4px;
+  color: #a8a0d8;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.route-summary dd {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.vendor-list__meta {
+  display: block;
+  color: #9db4ff;
+  font-size: 0.8rem;
+}
+
+.vendor-list__item--slow {
+  border: 1px solid rgba(255, 143, 157, 0.45);
+  background: rgba(255, 143, 157, 0.08);
+}
+
+.node--slowest .node__icon {
+  border-color: rgba(255, 143, 157, 0.72);
+  box-shadow: 0 0 24px rgba(255, 143, 157, 0.28);
+}
+
+.node--slowest h3 {
+  color: #ffc2cb;
+}
+
 .mini-panel {
   min-height: 180px;
   padding: 20px;
@@ -954,7 +1038,9 @@ input::placeholder {
   .score-card,
   .piece-tray,
   .insights-grid,
-  .layer-explain ul {
+  .insights-grid--expanded,
+  .layer-explain ul,
+  .route-summary {
     grid-template-columns: 1fr;
   }
 
@@ -1246,7 +1332,25 @@ input::placeholder {
             </p>
           </div>
 
-          <div class="insights-grid">
+          <div class="insights-grid insights-grid--expanded">
+            <article class="mini-panel route-map-panel">
+              <h3>Mapa da rota</h3>
+              <p class="vendor-panel__note">Distância geográfica aproximada entre os saltos com coordenadas conhecidas.</p>
+              <div class="route-map" id="route-map" aria-label="Mapa geográfico da rota">
+                <p class="route-map__empty">O mapa aparece após traçar a rota.</p>
+              </div>
+            </article>
+
+            <article class="mini-panel route-summary-panel">
+              <h3>Resumo da rota</h3>
+              <dl class="route-summary" id="route-summary">
+                <div><dt>Saltos</dt><dd>—</dd></div>
+                <div><dt>Distância</dt><dd>—</dd></div>
+                <div><dt>Maior latência</dt><dd>—</dd></div>
+                <div><dt>Probe</dt><dd>—</dd></div>
+              </dl>
+            </article>
+
             <article class="mini-panel">
               <h3>Log da jornada</h3>
               <ol class="log-list" id="journey-log" aria-live="polite">
@@ -1494,6 +1598,161 @@ window.MacVendor = {
 window.RouteTracer = (() => {
   const ipCache = new Map();
 
+  function computeRttStats(timings = []) {
+    const values = timings.map((item) => item.rtt).filter((value) => typeof value === "number");
+    if (!values.length) {
+      return { min: null, avg: null, max: null, jitter: null };
+    }
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const jitter = max - min;
+
+    return {
+      min,
+      avg,
+      max,
+      jitter,
+    };
+  }
+
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    if ([lat1, lon1, lat2, lon2].some((value) => value == null)) return null;
+
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+
+    return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function parseAsn(value) {
+    if (!value) return null;
+    const match = String(value).match(/AS(\d+)/i);
+    return match ? `AS${match[1]}` : null;
+  }
+
+  function normalizeIpLookup(data, ip) {
+    const asn = data.asn || parseAsn(data.as);
+    return {
+      ip,
+      org: data.org || data.isp || asn || "Operador desconhecido",
+      isp: data.isp || data.org || null,
+      asn,
+      city: data.city || null,
+      region: data.region || data.regionName || null,
+      country: data.country_name || data.country || null,
+      countryCode: data.country_code || data.countryCode || null,
+      latitude: data.latitude ?? data.lat ?? null,
+      longitude: data.longitude ?? data.lon ?? null,
+      timezone: data.timezone || null,
+    };
+  }
+
+  async function lookupHopWithFallback(ip, lookupIp, fallbackLookupIp) {
+    if (ipCache.has(ip)) return ipCache.get(ip);
+
+    let details = null;
+
+    try {
+      details = normalizeIpLookup(await lookupIp(ip), ip);
+    } catch {
+      try {
+        details = normalizeIpLookup(await fallbackLookupIp(ip), ip);
+      } catch {
+        details = {
+          ip,
+          org: "Operador desconhecido",
+          isp: null,
+          asn: null,
+          city: null,
+          region: null,
+          country: null,
+          countryCode: null,
+          latitude: null,
+          longitude: null,
+          timezone: null,
+        };
+      }
+    }
+
+    const device = window.MacVendor.classifyDevice(details.org);
+    const role = inferHopRole({
+      hostname: null,
+      org: details.org,
+      isGateway: false,
+      isDestination: false,
+      index: 0,
+    });
+
+    const enriched = {
+      ...details,
+      deviceLabel: device.label,
+      deviceType: device.type,
+      role: role.label,
+      roleHint: role.hint,
+    };
+
+    ipCache.set(ip, enriched);
+    return enriched;
+  }
+
+  function inferHopRole({ hostname, org, isGateway, isDestination, index }) {
+    const host = (hostname || "").toLowerCase();
+    const vendor = (org || "").toLowerCase();
+
+    if (index === 0) {
+      return { label: "Origem local", hint: "Sua máquina na rede local." };
+    }
+
+    if (isDestination) {
+      return { label: "Destino final", hint: "Servidor ou host de destino." };
+    }
+
+    if (isGateway || host.includes("gateway") || host.includes("_gateway")) {
+      return { label: "Gateway", hint: "Primeiro roteador após a origem do probe." };
+    }
+
+    if (/google|cloudflare|amazon|microsoft|oracle|facebook|meta/.test(vendor)) {
+      return { label: "Nuvem / backbone", hint: "Infraestrutura de datacenter ou CDN." };
+    }
+
+    if (/telefon|vivo|claro|tim|oi |net |isp|telecom|carrier/.test(vendor)) {
+      return { label: "ISP / operadora", hint: "Provedor de acesso ou trânsito." };
+    }
+
+    if (/cisco|juniper|huawei|arista|level3|lumen|gtt|tata|ntt/.test(vendor)) {
+      return { label: "Backbone", hint: "Rede de transporte entre operadores." };
+    }
+
+    return { label: "Roteador intermediário", hint: "Equipamento de encaminhamento na rota." };
+  }
+
+  function hopIcon(role, isDestination, index) {
+    if (index === 0) return "💻";
+    if (isDestination) return "☁️";
+    if (role === "Gateway") return "📡";
+    if (role === "ISP / operadora") return "📶";
+    if (role === "Nuvem / backbone") return "🏢";
+    if (role === "Backbone") return "🔗";
+    return "🛰️";
+  }
+
+  function formatLocation(hop) {
+    const parts = [hop.city, hop.region, hop.country].filter(Boolean);
+    return parts.length ? parts.join(", ") : "Localização indisponível";
+  }
+
+  function formatRtt(stats) {
+    if (stats.avg == null) return "RTT indisponível";
+    if (stats.min === stats.max) return `${stats.avg.toFixed(1)} ms`;
+    return `${stats.min.toFixed(1)} / ${stats.avg.toFixed(1)} / ${stats.max.toFixed(1)} ms`;
+  }
+
   async function pollMeasurement(id, attempts = 25, delayMs = 1000) {
     for (let attempt = 0; attempt < attempts; attempt += 1) {
       const response = await fetch(`https://api.globalping.io/v1/measurements/${id}`);
@@ -1523,32 +1782,6 @@ window.RouteTracer = (() => {
     return response.json();
   }
 
-  async function lookupHop(ip, lookupIp) {
-    if (ipCache.has(ip)) return ipCache.get(ip);
-
-    const details = await lookupIp(ip);
-    const org = details.org || (details.asn ? `AS${details.asn}` : "Operador desconhecido");
-    const device = window.MacVendor.classifyDevice(org);
-    const enriched = {
-      org,
-      asn: details.asn,
-      city: details.city,
-      country: details.country_name,
-      deviceLabel: device.label,
-      deviceType: device.type,
-    };
-
-    ipCache.set(ip, enriched);
-    return enriched;
-  }
-
-  function hopIcon(index, total) {
-    if (index === 0) return "💻";
-    if (index === total - 1) return "☁️";
-    if (index === 1) return "📡";
-    return "🛰️";
-  }
-
   async function traceToDestination(targetIp, networkState, lookupIp, isPrivateIpv4) {
     if (isPrivateIpv4(targetIp)) {
       throw new Error("private-target");
@@ -1573,16 +1806,34 @@ window.RouteTracer = (() => {
     };
   }
 
-  async function buildPath(traceData, networkState, originIp, lookupIp, isPrivateIpv4) {
+  async function buildPath(traceData, networkState, originIp, lookupIp, fallbackLookupIp, isPrivateIpv4) {
     const { probe, hops } = traceData;
+    let previousLat = probe.latitude ?? networkState.latitude ?? null;
+    let previousLon = probe.longitude ?? networkState.longitude ?? null;
+    let totalDistanceKm = 0;
+
+    const originRole = inferHopRole({ index: 0 });
     const path = [
       {
         label: "Seu Computador",
         ip: originIp,
-        icon: "💻",
+        icon: hopIcon(originRole.label, false, 0),
         org: "Sua máquina",
+        isp: null,
+        asn: null,
+        city: networkState.city,
+        region: networkState.region,
+        country: networkState.countryName,
+        countryCode: networkState.countryCode,
+        latitude: networkState.latitude,
+        longitude: networkState.longitude,
         deviceLabel: "Origem local",
         deviceType: "endpoint",
+        role: originRole.label,
+        roleHint: originRole.hint,
+        rttStats: { min: null, avg: null, max: null, jitter: null },
+        distanceKm: 0,
+        accumulatedKm: 0,
         log: `Pacote saiu da sua máquina (${originIp}).`,
       },
     ];
@@ -1595,58 +1846,131 @@ window.RouteTracer = (() => {
       if (!ip || seen.has(ip)) continue;
       seen.add(ip);
 
-      const rtt = hop.timings?.[0]?.rtt ?? null;
       const hostname =
         hop.resolvedHostname && hop.resolvedHostname !== ip ? hop.resolvedHostname : null;
       const isLast = index === hops.length - 1;
+      const rttStats = computeRttStats(hop.timings);
+      const isGateway = path.length === 1 || (hostname || "").toLowerCase().includes("gateway");
 
-      let org = probe.network;
-      let deviceLabel = "Equipamento de rede";
-      let deviceType = "network";
+      let details = {
+        org: probe.network,
+        isp: probe.network,
+        asn: probe.asn ? `AS${probe.asn}` : null,
+        city: probe.city,
+        region: probe.state,
+        country: probe.region,
+        countryCode: probe.country,
+        latitude: probe.latitude,
+        longitude: probe.longitude,
+        deviceLabel: "Equipamento de rede",
+        deviceType: "network",
+      };
 
-      try {
-        if (isPrivateIpv4(ip)) {
-          org = "Gateway / rede local";
-          deviceLabel = "Equipamento de rede";
-          deviceType = "network";
-        } else {
-          const details = await lookupHop(ip, lookupIp);
-          org = details.org;
-          deviceLabel = details.deviceLabel;
-          deviceType = details.deviceType;
-          await new Promise((resolve) => window.setTimeout(resolve, 250));
-        }
-      } catch {
-        org = hostname || "Rede intermediária";
+      if (isPrivateIpv4(ip)) {
+        details.org = "Gateway / rede local";
+        details.isp = probe.network;
+        details.deviceLabel = "Equipamento de rede";
+        details.deviceType = "network";
+      } else {
+        const enriched = await lookupHopWithFallback(ip, lookupIp, fallbackLookupIp);
+        details = { ...details, ...enriched };
+        await new Promise((resolve) => window.setTimeout(resolve, 350));
       }
 
+      const role = inferHopRole({
+        hostname,
+        org: details.org,
+        isGateway,
+        isDestination: isLast,
+        index: path.length,
+      });
+
+      const segmentKm = haversineKm(previousLat, previousLon, details.latitude, details.longitude);
+      if (segmentKm != null) totalDistanceKm += segmentKm;
+
       const label = isLast ? "Destino" : `Salto ${path.length}`;
-      const log = hostname
-        ? `${label}: ${ip} (${hostname}) — ${org}${rtt != null ? `, ${rtt.toFixed(1)} ms` : ""}.`
-        : `${label}: ${ip} — ${org}${rtt != null ? `, ${rtt.toFixed(1)} ms` : ""}.`;
+      const locationText = formatLocation(details);
+      const rttText = formatRtt(rttStats);
+
+      const log = [
+        `${label}: ${ip}`,
+        hostname ? `(${hostname})` : null,
+        details.asn ? details.asn : null,
+        details.org,
+        locationText !== "Localização indisponível" ? locationText : null,
+        `RTT ${rttText}`,
+        segmentKm != null ? `+${segmentKm.toFixed(0)} km` : null,
+      ]
+        .filter(Boolean)
+        .join(" — ");
 
       path.push({
         label,
         ip,
         hostname,
-        rtt,
-        icon: hopIcon(path.length, hops.length + 1),
-        org,
-        deviceLabel,
-        deviceType,
+        icon: hopIcon(role.label, isLast, path.length),
+        org: details.org,
+        isp: details.isp,
+        asn: details.asn,
+        city: details.city,
+        region: details.region,
+        country: details.country,
+        countryCode: details.countryCode,
+        latitude: details.latitude,
+        longitude: details.longitude,
+        timezone: details.timezone,
+        deviceLabel: details.deviceLabel,
+        deviceType: details.deviceType,
+        role: role.label,
+        roleHint: role.hint,
+        rttStats,
+        distanceKm: segmentKm,
+        accumulatedKm: totalDistanceKm,
         log,
       });
+
+      if (details.latitude != null && details.longitude != null) {
+        previousLat = details.latitude;
+        previousLon = details.longitude;
+      }
     }
+
+    let slowestHopIndex = 0;
+    let slowestRtt = -1;
+    path.forEach((hop, index) => {
+      if (hop.rttStats?.avg != null && hop.rttStats.avg > slowestRtt) {
+        slowestRtt = hop.rttStats.avg;
+        slowestHopIndex = index;
+      }
+    });
+
+    path.forEach((hop, index) => {
+      hop.isSlowest = index === slowestHopIndex && slowestRtt > 0 && index > 0;
+    });
 
     return {
       path,
       probeLabel: `${probe.city}, ${probe.country} (${probe.network})`,
+      probe,
+      summary: {
+        hopCount: path.length - 1,
+        totalDistanceKm,
+        slowestHopIndex,
+        slowestRtt,
+        probeCity: probe.city,
+        probeCountry: probe.country,
+        probeNetwork: probe.network,
+        probeAsn: probe.asn ? `AS${probe.asn}` : null,
+      },
     };
   }
 
   return {
     traceToDestination,
     buildPath,
+    formatRtt,
+    formatLocation,
+    haversineKm,
   };
 })();
 
@@ -1683,6 +2007,8 @@ const packetReadiness = document.querySelector("#packet-readiness");
 const routeStatus = document.querySelector("#route-status");
 const routePlaceholder = document.querySelector("#route-placeholder");
 const vendorList = document.querySelector("#vendor-list");
+const routeMap = document.querySelector("#route-map");
+const routeSummary = document.querySelector("#route-summary");
 const macOrigemInput = document.querySelector("#mac-origem");
 const macDestinoInput = document.querySelector("#mac-destino");
 const macOrigemFeedback = document.querySelector("#mac-origem-feedback");
@@ -1705,8 +2031,13 @@ const networkState = {
   countryCode: null,
   countryName: null,
   city: null,
+  region: null,
+  latitude: null,
+  longitude: null,
   tracedDestination: null,
   probeLabel: null,
+  lastPath: [],
+  lastSummary: null,
 };
 
 let activeTimer = null;
@@ -1798,8 +2129,16 @@ function renderVendorBadgeFromHop(node, hop) {
     return;
   }
 
-  badge.textContent = `${hop.org} · ${hop.deviceLabel || "rede"}`;
+  badge.textContent = [hop.asn, hop.org, hop.role].filter(Boolean).join(" · ") || "Operador desconhecido";
   badge.classList.add(`vendor-badge--${hop.deviceType || "unknown"}`);
+}
+
+function formatHopRtt(hop) {
+  return window.RouteTracer.formatRtt(hop.rttStats || {});
+}
+
+function formatHopLocation(hop) {
+  return window.RouteTracer.formatLocation(hop);
 }
 
 function renderVendorListFromPath(path) {
@@ -1808,21 +2147,34 @@ function renderVendorListFromPath(path) {
   path.forEach((hop, index) => {
     const node = nodes[index];
     const item = document.createElement("li");
+    if (hop.isSlowest) item.classList.add("vendor-list__item--slow");
 
     const name = document.createElement("strong");
-    name.textContent = hop.label;
+    name.textContent = `${hop.label}${hop.isSlowest ? " · maior latência" : ""}`;
 
     const address = document.createElement("span");
     address.className = "vendor-list__mac";
-    address.textContent = hop.ip;
+    address.textContent = [hop.ip, hop.hostname].filter(Boolean).join(" · ");
+
+    const meta = document.createElement("span");
+    meta.className = "vendor-list__meta";
+    meta.textContent = [
+      hop.asn,
+      hop.org,
+      hop.role,
+      formatHopLocation(hop),
+    ].filter(Boolean).join(" · ");
 
     const detail = document.createElement("span");
     detail.className = "vendor-list__detail";
-    detail.textContent = hop.org
-      ? `${hop.org} — ${hop.deviceLabel}${hop.rtt != null ? ` · ${hop.rtt.toFixed(1)} ms` : ""}`
-      : "Aguardando identificação do operador";
+    detail.textContent = [
+      `RTT ${formatHopRtt(hop)}`,
+      hop.distanceKm != null ? `trecho ${hop.distanceKm.toFixed(0)} km` : null,
+      hop.accumulatedKm != null && hop.accumulatedKm > 0 ? `acumulado ${hop.accumulatedKm.toFixed(0)} km` : null,
+      hop.roleHint,
+    ].filter(Boolean).join(" · ");
 
-    item.append(name, address, detail);
+    item.append(name, address, meta, detail);
     vendorList.append(item);
     if (node) renderVendorBadgeFromHop(node, hop);
   });
@@ -1830,13 +2182,20 @@ function renderVendorListFromPath(path) {
 
 function getHopVendorMessage(stepIndex) {
   const hop = route[stepIndex]?.hop;
-  if (!hop?.org) return "";
-  return ` Operador: ${hop.org} (${hop.deviceLabel || "rede"}).`;
+  if (!hop) return "";
+  const parts = [
+    hop.org ? `Operador: ${hop.org}` : null,
+    hop.asn,
+    hop.role,
+    formatHopLocation(hop) !== "Localização indisponível" ? formatHopLocation(hop) : null,
+    hop.rttStats?.avg != null ? `RTT ${formatHopRtt(hop)}` : null,
+  ].filter(Boolean);
+  return parts.length ? ` ${parts.join(" · ")}.` : "";
 }
 
 function createNodeElement(hop, index, total) {
   const article = document.createElement("article");
-  article.className = `node${index === 0 ? " node--active" : ""}`;
+  article.className = `node${index === 0 ? " node--active" : ""}${hop.isSlowest ? " node--slowest" : ""}`;
   article.dataset.node = String(index);
   article.dataset.ip = hop.ip;
   if (hop.org) article.dataset.org = hop.org;
@@ -1852,10 +2211,16 @@ function createNodeElement(hop, index, total) {
   if (index === 0) details.id = "node-local-ip";
   if (index === total - 1) details.id = "node-dest-ip";
 
-  const lines = [hop.ip];
-  if (hop.hostname) lines.push(hop.hostname);
-  if (hop.org) lines.push(hop.org);
-  if (hop.rtt != null) lines.push(`${hop.rtt.toFixed(1)} ms`);
+  const lines = [
+    hop.ip,
+    hop.hostname,
+    hop.asn,
+    hop.org,
+    hop.role,
+    formatHopLocation(hop),
+    hop.rttStats?.avg != null ? `RTT ${formatHopRtt(hop)}` : null,
+    hop.distanceKm != null ? `+${hop.distanceKm.toFixed(0)} km` : null,
+  ].filter(Boolean);
   details.innerHTML = lines.join("<br />");
 
   const badge = document.createElement("span");
@@ -1864,6 +2229,95 @@ function createNodeElement(hop, index, total) {
 
   article.append(icon, title, details, badge);
   return article;
+}
+
+function projectMapPoints(path, width = 760, height = 220, padding = 28) {
+  const geoPoints = path
+    .map((hop, index) => ({ hop, index }))
+    .filter(({ hop }) => hop.latitude != null && hop.longitude != null);
+
+  if (geoPoints.length < 2) return null;
+
+  const lats = geoPoints.map(({ hop }) => hop.latitude);
+  const lons = geoPoints.map(({ hop }) => hop.longitude);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLon = Math.min(...lons);
+  const maxLon = Math.max(...lons);
+  const latSpan = Math.max(maxLat - minLat, 0.8);
+  const lonSpan = Math.max(maxLon - minLon, 0.8);
+
+  return geoPoints.map(({ hop, index }) => ({
+    hop,
+    index,
+    x: padding + ((hop.longitude - minLon) / lonSpan) * (width - padding * 2),
+    y: padding + (1 - (hop.latitude - minLat) / latSpan) * (height - padding * 2),
+  }));
+}
+
+function renderRouteMap(path) {
+  if (!routeMap) return;
+
+  const points = projectMapPoints(path);
+  if (!points) {
+    routeMap.innerHTML = '<p class="route-map__empty">Sem coordenadas suficientes para desenhar o mapa desta rota.</p>';
+    return;
+  }
+
+  const width = 760;
+  const height = 220;
+  const polyline = points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+
+  const markers = points
+    .map(({ hop, index, x, y }) => {
+      const fill = hop.isSlowest ? "#ff8f9d" : index === 0 ? "#7dffb2" : index === points.length - 1 ? "#9db4ff" : "#c4b5fd";
+      const title = `${hop.label} (${hop.ip})`;
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7" fill="${fill}" stroke="#0b1020" stroke-width="2"><title>${title}</title></circle>`;
+    })
+    .join("");
+
+  const labels = points
+    .filter((_, index) => index === 0 || index === points.length - 1 || points[index].hop.isSlowest)
+    .map(({ hop, x, y }) => `<text x="${x.toFixed(1)}" y="${(y - 12).toFixed(1)}" text-anchor="middle" class="route-map__label">${hop.label}</text>`)
+    .join("");
+
+  routeMap.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" class="route-map__svg" role="img" aria-label="Mapa geográfico da rota">
+      <defs>
+        <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#8b5cf6" />
+          <stop offset="100%" stop-color="#43d7ff" />
+        </linearGradient>
+      </defs>
+      <polyline points="${polyline}" fill="none" stroke="url(#routeGradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      ${markers}
+      ${labels}
+    </svg>`;
+}
+
+function renderRouteSummary(path, summary, probeLabel) {
+  if (!routeSummary) return;
+
+  const countries = [...new Set(path.map((hop) => hop.country).filter(Boolean))];
+  const slowHop = path[summary?.slowestHopIndex];
+  const entries = [
+    ["Saltos", `${summary?.hopCount ?? path.length - 1}`],
+    ["Distância acumulada", summary?.totalDistanceKm ? `${summary.totalDistanceKm.toFixed(0)} km` : "—"],
+    ["Países na rota", countries.length ? countries.join(", ") : "—"],
+    [
+      "Maior latência",
+      slowHop?.rttStats?.avg != null
+        ? `${slowHop.label} (${slowHop.ip}) · ${slowHop.rttStats.avg.toFixed(1)} ms`
+        : "—",
+    ],
+    ["Probe do teste", probeLabel || "—"],
+    ["ASN do probe", summary?.probeAsn || "—"],
+    ["Rede do probe", summary?.probeNetwork || "—"],
+  ];
+
+  routeSummary.innerHTML = entries
+    .map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`)
+    .join("");
 }
 
 function rebuildRouteFromPath(path) {
@@ -1875,7 +2329,7 @@ function rebuildRouteFromPath(path) {
   }));
 }
 
-function rebuildNetworkMap(path) {
+function rebuildNetworkMap(path, summary, probeLabel) {
   if (routePlaceholder) routePlaceholder.remove();
 
   networkMap.querySelectorAll(".node").forEach((node) => node.remove());
@@ -1894,6 +2348,18 @@ function rebuildNetworkMap(path) {
 
   rebuildRouteFromPath(path);
   renderVendorListFromPath(path);
+  renderRouteMap(path);
+  renderRouteSummary(path, summary, probeLabel);
+}
+
+async function fallbackLookupIp(ip) {
+  const response = await fetch(
+    `https://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,countryCode,regionName,city,lat,lon,isp,org,as,query,timezone`,
+  );
+  if (!response.ok) throw new Error("lookup-failed");
+  const data = await response.json();
+  if (data.status !== "success") throw new Error(data.message || "lookup-failed");
+  return data;
 }
 
 async function enrichUserGeo() {
@@ -1904,9 +2370,22 @@ async function enrichUserGeo() {
     networkState.countryCode = geo.country_code || "BR";
     networkState.countryName = geo.country_name || networkState.countryCode;
     networkState.city = geo.city || null;
+    networkState.region = geo.region || null;
+    networkState.latitude = geo.latitude ?? null;
+    networkState.longitude = geo.longitude ?? null;
   } catch {
-    networkState.countryCode = "BR";
-    networkState.countryName = "Brasil";
+    try {
+      const geo = await fallbackLookupIp(networkState.publicIp);
+      networkState.countryCode = geo.countryCode || "BR";
+      networkState.countryName = geo.country || networkState.countryCode;
+      networkState.city = geo.city || null;
+      networkState.region = geo.regionName || null;
+      networkState.latitude = geo.lat ?? null;
+      networkState.longitude = geo.lon ?? null;
+    } catch {
+      networkState.countryCode = "BR";
+      networkState.countryName = "Brasil";
+    }
   }
 }
 
@@ -1925,15 +2404,21 @@ async function traceAndBuildRoute(destinationIp) {
     networkState,
     networkState.localIp || ipOrigemInput.value.trim() || "192.168.1.10",
     lookupIp,
+    fallbackLookupIp,
     isPrivateIpv4,
   );
 
   networkState.tracedDestination = destinationIp;
   networkState.probeLabel = built.probeLabel;
-  rebuildNetworkMap(built.path);
+  networkState.lastPath = built.path;
+  networkState.lastSummary = built.summary;
+  rebuildNetworkMap(built.path, built.summary, built.probeLabel);
 
   if (routeStatus) {
-    routeStatus.textContent = `Traceroute real via ${built.probeLabel}. ${built.path.length - 1} saltos até ${destinationIp}.`;
+    const distance = built.summary.totalDistanceKm
+      ? ` · ~${built.summary.totalDistanceKm.toFixed(0)} km`
+      : "";
+    routeStatus.textContent = `Traceroute real via ${built.probeLabel}. ${built.summary.hopCount} saltos até ${destinationIp}${distance}.`;
   }
 
   return built;
@@ -2538,6 +3023,14 @@ resetButton.addEventListener("click", () => {
   if (routeStatus) {
     routeStatus.textContent = "Informe o IP destino e clique em Traçar rota para descobrir os saltos reais.";
   }
+  if (routeMap) {
+    routeMap.innerHTML = '<p class="route-map__empty">O mapa aparece após traçar a rota.</p>';
+  }
+  if (routeSummary) {
+    routeSummary.innerHTML = '<div><dt>Saltos</dt><dd>—</dd></div><div><dt>Distância</dt><dd>—</dd></div><div><dt>Maior latência</dt><dd>—</dd></div><div><dt>Probe</dt><dd>—</dd></div>';
+  }
+  networkState.lastPath = [];
+  networkState.lastSummary = null;
   packet.classList.remove("is-visible");
   packet.style.left = "7%";
   score.textContent = "0";
