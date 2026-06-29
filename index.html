@@ -164,7 +164,7 @@
                     autocomplete="off"
                   />
                   <button class="ghost-button ghost-button--compact" type="button" id="test-ip-button">
-                    Testar IP
+                    Traçar rota
                   </button>
                 </div>
                 <small class="field-feedback" id="ip-destino-feedback"></small>
@@ -223,7 +223,7 @@
               <span class="section-number">2</span>
               <div>
                 <h2 id="journey-title">Seu pacote está viajando...</h2>
-                <p>Acompanhe cada passo da jornada do pacote pela rede.</p>
+                <p>A rota é montada com traceroute real na sua região (Globalping).</p>
               </div>
             </div>
             <button class="ghost-button ghost-button--compact" type="button" id="view-toggle">
@@ -236,53 +236,16 @@
             <strong id="packet-status">Pacote aguardando</strong>
             <output id="progress-label">0%</output>
           </div>
+          <p class="route-status" id="route-status" aria-live="polite">
+            Informe o IP destino e clique em Traçar rota para descobrir os saltos reais.
+          </p>
 
-          <div class="network-map" id="network-map" aria-label="Mapa da rota do pacote">
+          <div class="network-map network-map--empty" id="network-map" aria-label="Mapa da rota do pacote" style="--hop-count: 1">
             <div class="network-line" aria-hidden="true"></div>
             <div class="packet" id="packet" aria-hidden="true"></div>
-
-            <article class="node node--active" data-node="0" data-mac="00:1B:21:8A:4C:10">
-              <span class="node__icon">💻</span>
-              <h3>Seu Computador</h3>
-              <p id="node-local-ip">192.168.1.10</p>
-              <span class="vendor-badge" data-vendor-badge></span>
-            </article>
-            <article class="node" data-node="1" data-mac="00:1A:A1:2F:33:01">
-              <span class="node__icon">▰</span>
-              <h3>Switch</h3>
-              <p>Camada 2<br />Encaminha por MAC</p>
-              <span class="vendor-badge" data-vendor-badge></span>
-            </article>
-            <article class="node" data-node="2" data-mac="00:46:4B:12:AA:77">
-              <span class="node__icon">📡</span>
-              <h3>Roteador</h3>
-              <p>Camada 3<br />Roteia por IP</p>
-              <span class="vendor-badge" data-vendor-badge></span>
-            </article>
-            <article class="node" data-node="3" data-mac="00:46:4B:12:AA:78">
-              <span class="node__icon">📊</span>
-              <h3>NAT</h3>
-              <p>Tradução<br />IP privado → público</p>
-              <span class="vendor-badge" data-vendor-badge></span>
-            </article>
-            <article class="node" data-node="4" data-mac="00:1C:7F:09:22:55">
-              <span class="node__icon">🧱</span>
-              <h3>Firewall</h3>
-              <p>Segurança<br />Inspeciona pacote</p>
-              <span class="vendor-badge" data-vendor-badge></span>
-            </article>
-            <article class="node" data-node="5" data-mac="00:50:56:A1:B2:C3">
-              <span class="node__icon">🗄️</span>
-              <h3>DNS</h3>
-              <p>Resolve nomes<br />se necessário</p>
-              <span class="vendor-badge" data-vendor-badge></span>
-            </article>
-            <article class="node" data-node="6" data-mac="3C:5A:B4:01:02:03">
-              <span class="node__icon">☁️</span>
-              <h3>Servidor</h3>
-              <p id="node-dest-ip">8.8.8.8</p>
-              <span class="vendor-badge" data-vendor-badge></span>
-            </article>
+            <p class="route-placeholder" id="route-placeholder">
+              A rota aparece aqui após o traceroute. Cada destino mostra saltos diferentes.
+            </p>
           </div>
 
           <div class="insights-grid">
@@ -312,9 +275,9 @@
             </article>
 
             <article class="mini-panel vendor-panel">
-              <h3>Fabricantes na rota (OUI/MAC)</h3>
+              <h3>Equipamentos na rota (tracert real)</h3>
               <p class="vendor-panel__note">
-                Cada salto usa um MAC simulado. O prefixo OUI revela o fabricante da interface.
+                Saltos obtidos por traceroute na sua região. Operadores reais por IP/ASN — MAC só na rede local.
               </p>
               <ol class="vendor-list" id="vendor-list"></ol>
             </article>
@@ -324,6 +287,7 @@
     </div>
 
     <script src="mac-vendor.js"></script>
+    <script src="traceroute.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

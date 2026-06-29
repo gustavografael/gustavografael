@@ -574,11 +574,37 @@ input::placeholder {
   font-weight: 900;
 }
 
+.route-status {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(67, 215, 255, 0.28);
+  background: rgba(67, 215, 255, 0.08);
+  color: #c8f8ff;
+  font-size: 0.86rem;
+}
+
+.route-placeholder {
+  grid-column: 1 / -1;
+  margin: 48px 12px;
+  padding: 18px;
+  border: 1px dashed rgba(139, 92, 246, 0.35);
+  border-radius: 16px;
+  color: #d4cff8;
+  text-align: center;
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.network-map--empty .network-line,
+.network-map--empty .packet {
+  opacity: 0.15;
+}
+
 .network-map {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(var(--hop-count, 7), minmax(0, 1fr));
   gap: 16px;
   align-items: center;
   min-height: 230px;
