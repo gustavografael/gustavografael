@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="NetGuardian — dashboard para troubleshooting de firewalls Check Point via SSH, com diagnóstico inteligente, validação HA e pacote TAC."
+    />
+    <meta name="theme-color" content="#231F20" />
+    <title>NetGuardian — Troubleshooting Check Point</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --berry: #ee0c5d;
+        --berry-soft: #ff4d8d;
+        --berry-glow: #ffd6e5;
+        --grey: #41273c;
+        --black: #231f20;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --ok: #34d399;
+        --warn: #fbbf24;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at top left, var(--berry) 0%, var(--grey) 34%, var(--black) 100%);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .wrap {
+        width: min(1120px, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2rem 0 4rem;
+      }
+
+      .agent-banner {
+        margin-bottom: 1.5rem;
+        padding: 0.9rem 1rem;
+        border-radius: 1rem;
+        border: 1px solid transparent;
+        font-size: 0.9rem;
+        display: none;
+      }
+
+      .agent-banner.show {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .agent-banner.ok {
+        border-color: rgb(52 211 153 / 0.35);
+        background: rgb(16 185 129 / 0.12);
+        color: #d1fae5;
+      }
+
+      .agent-banner.warn {
+        border-color: rgb(251 191 36 / 0.35);
+        background: rgb(245 158 11 / 0.12);
+        color: #fef3c7;
+      }
+
+      .agent-banner.loading {
+        border-color: rgb(255 255 255 / 0.1);
+        background: rgb(255 255 255 / 0.05);
+        color: var(--muted);
+      }
+
+      .hero {
+        overflow: hidden;
+        border: 1px solid rgb(255 255 255 / 0.1);
+        border-radius: 2rem;
+        background: rgb(255 255 255 / 0.06);
+        padding: 2rem;
+        box-shadow: 0 25px 50px rgb(0 0 0 / 0.3);
+        backdrop-filter: blur(12px);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid rgb(238 12 93 / 0.25);
+        border-radius: 999px;
+        background: rgb(238 12 93 / 0.1);
+        color: var(--berry-glow);
+        padding: 0.45rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      h1 {
+        margin: 1rem 0 0;
+        font-size: clamp(2.2rem, 5vw, 3.4rem);
+        font-weight: 900;
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+      }
+
+      .lead {
+        margin: 1rem 0 0;
+        max-width: 52rem;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.7;
+      }
+
+      .hero-actions {
+        margin-top: 1.75rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border: 0;
+        border-radius: 1rem;
+        padding: 0.9rem 1.25rem;
+        font: inherit;
+        font-size: 0.95rem;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        background: var(--berry);
+        color: #111827;
+      }
+
+      .btn-primary:hover {
+        background: var(--berry-soft);
+      }
+
+      .btn-secondary {
+        border: 1px solid rgb(255 255 255 / 0.12);
+        background: rgb(255 255 255 / 0.08);
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        border-color: rgb(238 12 93 / 0.45);
+        background: rgb(238 12 93 / 0.1);
+      }
+
+      .stats {
+        margin-top: 1.5rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.75rem;
+      }
+
+      .stat {
+        border: 1px solid rgb(255 255 255 / 0.08);
+        border-radius: 1.25rem;
+        background: rgb(0 0 0 / 0.2);
+        padding: 1rem 1.1rem;
+      }
+
+      .stat-label {
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .stat-value {
+        margin-top: 0.35rem;
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: var(--berry-glow);
+      }
+
+      .grid {
+        margin-top: 2rem;
+        display: grid;
+        gap: 1.25rem;
+      }
+
+      @media (min-width: 768px) {
+        .grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+
+      .card {
+        border: 1px solid rgb(255 255 255 / 0.1);
+        border-radius: 1.75rem;
+        background: rgb(255 255 255 / 0.06);
+        padding: 1.5rem;
+        box-shadow: 0 20px 40px rgb(0 0 0 / 0.2);
+      }
+
+      .card-icon {
+        width: 3rem;
+        height: 3rem;
+        display: grid;
+        place-items: center;
+        border-radius: 1rem;
+        background: rgb(238 12 93 / 0.1);
+        color: #ff9fc4;
+        border: 1px solid rgb(238 12 93 / 0.25);
+        font-size: 1.35rem;
+      }
+
+      .card h2 {
+        margin: 1rem 0 0;
+        font-size: 1.35rem;
+        font-weight: 900;
+      }
+
+      .card p {
+        margin: 0.75rem 0 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.6;
+        min-height: 4.5rem;
+      }
+
+      .card ul {
+        margin: 0.9rem 0 0;
+        padding-left: 1.1rem;
+        color: #cbd5e1;
+        font-size: 0.85rem;
+        line-height: 1.55;
+      }
+
+      .setup {
+        margin-top: 2rem;
+        border: 1px solid rgb(255 255 255 / 0.1);
+        border-radius: 1.75rem;
+        background: rgb(0 0 0 / 0.22);
+        padding: 1.5rem;
+      }
+
+      .setup h2 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+
+      .setup p {
+        margin: 0.6rem 0 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      pre {
+        margin: 1rem 0 0;
+        overflow-x: auto;
+        border-radius: 1rem;
+        background: rgb(0 0 0 / 0.45);
+        border: 1px solid rgb(255 255 255 / 0.08);
+        padding: 1rem;
+        color: #f8fafc;
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      footer {
+        margin-top: 2rem;
+        color: var(--muted);
+        font-size: 0.82rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div id="agent-banner" class="agent-banner loading show">
+        <span id="agent-message">Procurando NetGuardian Local Agent na sua máquina...</span>
+        <button id="agent-retry" class="btn btn-secondary" type="button" style="padding: 0.45rem 0.8rem; font-size: 0.75rem">
+          Verificar novamente
+        </button>
+      </div>
+
+      <section class="hero">
+        <span class="eyebrow">Firewall Check Point</span>
+        <h1>NetGuardian</h1>
+        <p class="lead">
+          Dashboard para troubleshooting de firewalls Check Point via SSH. Execute health checks, valide roteamento em
+          clusters HA, gere pacotes TAC e receba diagnóstico inteligente com cards coloridos por severidade.
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="./" id="open-app">Abrir ferramenta</a>
+          <a class="btn btn-secondary" href="https://github.com/gustavografael/gustavografael" target="_blank" rel="noreferrer">
+            Ver no GitHub
+          </a>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">Automações</div>
+            <div class="stat-value">3</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Comandos de saúde</div>
+            <div class="stat-value">20</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Modo corporativo</div>
+            <div class="stat-value">Local</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid" aria-label="Funcionalidades">
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">🛡️</div>
+          <h2>Verificar Saúde do Ambiente</h2>
+          <p>Coleta CPU, memória, load, interfaces, erros RX/TX, CoreXL, SecureXL, disco, cluster, logs e sessões.</p>
+          <ul>
+            <li>Cards verde, amarelo e vermelho por severidade</li>
+            <li>Diagnóstico inteligente com correlação de eventos</li>
+            <li>Exportação do relatório em Markdown</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">🔀</div>
+          <h2>Validar Roteamento HA</h2>
+          <p>Identifica active/standby com <code>cphaprob stat</code>, compara rotas e prepara correção com confirmação.</p>
+          <ul>
+            <li>Diff entre caixas do cluster</li>
+            <li>Plano de correção antes de aplicar</li>
+            <li>Replicação segura de rotas estáticas</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">📦</div>
+          <h2>Gerar Pacote TAC</h2>
+          <p>Executa <code>cpinfo</code>, <code>cpview export</code>, coleta logs e dumps, e gera um <code>.tar.gz</code> para download.</p>
+          <ul>
+            <li>Pacote pronto para abertura de chamado</li>
+            <li>Coleta remota via SSH</li>
+            <li>Download direto pelo navegador</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="setup">
+        <h2>Como usar na sua máquina</h2>
+        <p>
+          A interface pode ficar publicada na Internet, mas os testes SSH saem do <strong>Local Agent</strong> na estação
+          do analista — ideal para VPN e redes internas.
+        </p>
+        <pre><code>git clone https://github.com/gustavografael/gustavografael.git
+cd gustavografael
+npm install
+npm run start:local
+
+# Abra no navegador:
+# http://localhost:5173</code></pre>
+      </section>
+
+      <footer>
+        NetGuardian — paleta inspirada em Check Point (Brand Berry, Gravitas Grey, Black).
+      </footer>
+    </div>
+
+    <script>
+      const AGENT_CANDIDATES = ["http://127.0.0.1:3737", "http://localhost:3737"];
+      const banner = document.getElementById("agent-banner");
+      const message = document.getElementById("agent-message");
+      const retryButton = document.getElementById("agent-retry");
+      const openAppLink = document.getElementById("open-app");
+
+      if (location.pathname.endsWith("/landing.html")) {
+        const appHref = location.pathname.replace(/landing\.html$/, "");
+        openAppLink.href = appHref || "./";
+      }
+
+      async function probeAgent() {
+        banner.className = "agent-banner loading show";
+        message.textContent = "Procurando NetGuardian Local Agent na sua máquina...";
+
+        for (const baseUrl of AGENT_CANDIDATES) {
+          try {
+            const response = await fetch(`${baseUrl}/api/status`, { signal: AbortSignal.timeout(2000) });
+            if (!response.ok) continue;
+
+            const payload = await response.json();
+            if (payload.ok && payload.mode === "local-agent") {
+              banner.className = "agent-banner ok show";
+              message.innerHTML =
+                `Agente local conectado em <strong>${baseUrl}</strong>` +
+                (payload.hostname ? ` • ${payload.hostname}` : "") +
+                ". Os testes SSH sairão deste computador.";
+              return;
+            }
+          } catch {
+            // try next candidate
+          }
+        }
+
+        banner.className = "agent-banner warn show";
+        message.innerHTML =
+          'Agente local não encontrado. Rode na sua estação: <code style="background:rgb(0 0 0 / 0.25);padding:0.15rem 0.45rem;border-radius:0.4rem">npm run start:local</code>';
+      }
+
+      retryButton.addEventListener("click", probeAgent);
+      probeAgent();
+    </script>
+  </body>
+</html>

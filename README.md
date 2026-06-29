@@ -115,6 +115,12 @@ npm run ui         # terminal 2 — porta 5173
 
 Depois abra **http://localhost:5173** no navegador.
 
+Página HTML estática de apresentação (sem React):
+
+```text
+http://localhost:5173/landing.html
+```
+
 Se aparecer `ERR_CONNECTION_REFUSED`, a UI não está rodando — execute `npm run start:local` na pasta do projeto.
 
 Com o agente rodando, valide a instalação local:
