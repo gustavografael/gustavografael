@@ -21,3 +21,7 @@ https://github.com/gustavografael/gustavografael/blob/main/download.html
 **Funciona offline:** simulação, teste de MAC/OUI, montar e enviar pacote.
 
 **Precisa de internet:** detectar IP público e consultar IP destino.
+
+## Rota real
+
+A dashboard usa traceroute real (Globalping) na sua região para montar os saltos até o destino.

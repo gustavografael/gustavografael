@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Por Dentro de um Pacote de Rede</title>
+    <meta
+      name="description"
+      content="Dashboard interativa para visualizar a jornada de um pacote pela rede."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero__intro">
+          <a class="back-link" href="#" aria-label="Voltar">← Voltar</a>
+          <p class="eyebrow">Laboratório de redes</p>
+          <h1>Por Dentro de um Pacote de Rede</h1>
+          <p>
+            Monte, envie e veja a jornada de um pacote pela rede, sem transformar
+            camadas OSI em terapia.
+          </p>
+        </div>
+
+        <ol class="steps" aria-label="Etapas da atividade">
+          <li class="steps__item steps__item--active">
+            <span>1</span>
+            <strong>Montar</strong>
+            <small>preencher campos</small>
+          </li>
+          <li class="steps__item">
+            <span>2</span>
+            <strong>Enviar</strong>
+            <small>disparar pacote</small>
+          </li>
+          <li class="steps__item">
+            <span>3</span>
+            <strong>Viajar</strong>
+            <small>acompanhar rota</small>
+          </li>
+          <li class="steps__item">
+            <span>4</span>
+            <strong>Entender</strong>
+            <small>estudar camadas</small>
+          </li>
+        </ol>
+
+        <div class="score-card">
+          <div>
+            <span>O Nível 1</span>
+            <strong>Iniciante</strong>
+          </div>
+          <div>
+            <span>🏆</span>
+            <strong><output id="score">0</output> pontos</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="dashboard">
+        <section class="panel builder" aria-labelledby="builder-title">
+          <div class="panel__heading">
+            <span class="section-number">1</span>
+            <div>
+              <h2 id="builder-title">Monte seu pacote</h2>
+              <p>Arraste as peças abaixo para os campos com borda.</p>
+            </div>
+          </div>
+
+          <div class="piece-tray" aria-label="Peças disponíveis">
+            <button class="piece" draggable="true" data-target="mac-destino" data-value="00:1A:A1:DD:EE:FF">
+              MAC destino
+            </button>
+            <button class="piece" draggable="true" data-target="ip-destino" data-value="8.8.8.8">
+              IP destino
+            </button>
+            <button class="piece" draggable="true" data-target="ttl" data-value="64">
+              TTL
+            </button>
+            <button class="piece" draggable="true" data-target="porta" data-value="443">
+              Porta TCP
+            </button>
+          </div>
+
+          <article class="network-info" id="network-info" aria-live="polite">
+            <div class="network-info__header">
+              <h3>Seu endereço de rede</h3>
+              <button class="ghost-button ghost-button--compact" type="button" id="detect-ip-button">
+                Detectar IP
+              </button>
+            </div>
+            <dl class="network-info__grid">
+              <div>
+                <dt>IP local</dt>
+                <dd id="local-ip">Detectando...</dd>
+              </div>
+              <div>
+                <dt>IP público</dt>
+                <dd id="public-ip">Detectando...</dd>
+              </div>
+            </dl>
+            <p class="network-info__note" id="network-info-note">
+              O IP local vem da sua máquina na rede. O IP público é o endereço visto na internet.
+            </p>
+          </article>
+
+          <p class="hint">
+            Dica: clique em <strong>Montar e enviar</strong> para preencher tudo e iniciar a
+            simulação automaticamente.
+          </p>
+
+          <form class="packet-form" id="packet-form">
+            <fieldset class="layer-card">
+              <legend>Ethernet <span>Camada 2</span></legend>
+              <label>
+                MAC Destino
+                <div class="field-row">
+                  <input
+                    id="mac-destino"
+                    name="macDestino"
+                    class="drop-field"
+                    placeholder="ex.: 00:1A:A1:DD:EE:FF"
+                    autocomplete="off"
+                  />
+                  <button class="ghost-button ghost-button--compact" type="button" id="test-mac-dest-button">
+                    Testar MAC
+                  </button>
+                </div>
+                <small class="field-feedback" id="mac-destino-feedback"></small>
+              </label>
+              <label>
+                MAC Origem
+                <div class="field-row">
+                  <input name="macOrigem" id="mac-origem" value="00:1B:21:44:55:66" autocomplete="off" />
+                  <button class="ghost-button ghost-button--compact" type="button" id="test-mac-orig-button">
+                    Testar MAC
+                  </button>
+                </div>
+                <small class="field-feedback" id="mac-origem-feedback"></small>
+              </label>
+            </fieldset>
+
+            <fieldset class="layer-card">
+              <legend>IP <span>Camada 3</span></legend>
+              <label>
+                IP Origem
+                <div class="field-row">
+                  <input name="ipOrigem" id="ip-origem" value="192.168.1.10" autocomplete="off" />
+                  <button class="ghost-button ghost-button--compact" type="button" id="use-local-ip">
+                    Usar meu IP
+                  </button>
+                </div>
+                <small class="field-feedback" id="ip-origem-feedback"></small>
+              </label>
+              <label>
+                IP Destino
+                <div class="field-row">
+                  <input
+                    id="ip-destino"
+                    name="ipDestino"
+                    class="drop-field"
+                    placeholder="ex.: 8.8.8.8"
+                    autocomplete="off"
+                  />
+                  <button class="ghost-button ghost-button--compact" type="button" id="test-ip-button">
+                    Traçar rota
+                  </button>
+                </div>
+                <small class="field-feedback" id="ip-destino-feedback"></small>
+              </label>
+              <label>
+                TTL
+                <input
+                  id="ttl"
+                  name="ttl"
+                  class="drop-field"
+                  placeholder="solte TTL aqui"
+                  autocomplete="off"
+                />
+              </label>
+              <label>
+                Protocolo
+                <select name="protocolo">
+                  <option>TCP</option>
+                  <option>UDP</option>
+                  <option>ICMP</option>
+                </select>
+              </label>
+            </fieldset>
+
+            <fieldset class="layer-card">
+              <legend>Transporte <span>Camada 4</span></legend>
+              <label>
+                Porta TCP
+                <input
+                  id="porta"
+                  name="porta"
+                  class="drop-field"
+                  placeholder="solte a porta aqui"
+                  autocomplete="off"
+                />
+              </label>
+            </fieldset>
+
+            <p class="packet-readiness" id="packet-readiness" aria-live="polite">
+              Faltam 4 campos para iniciar a viagem do pacote.
+            </p>
+
+            <div class="form-actions">
+              <button class="primary-button primary-button--pulse" type="button" id="auto-send-button">
+                Montar e enviar pacote
+              </button>
+              <button class="ghost-button" type="submit" id="send-button">Enviar pacote</button>
+              <button class="ghost-button" type="button" id="reset-button">Reiniciar</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel journey" aria-labelledby="journey-title">
+          <div class="panel__heading panel__heading--row">
+            <div class="panel__heading">
+              <span class="section-number">2</span>
+              <div>
+                <h2 id="journey-title">Seu pacote está viajando...</h2>
+                <p>A rota é montada com traceroute real na sua região (Globalping).</p>
+              </div>
+            </div>
+            <button class="ghost-button ghost-button--compact" type="button" id="view-toggle">
+              Ver em 3D
+            </button>
+          </div>
+
+          <div class="status-pill" aria-live="polite">
+            <span class="pulse-dot"></span>
+            <strong id="packet-status">Pacote aguardando</strong>
+            <output id="progress-label">0%</output>
+          </div>
+          <p class="route-status" id="route-status" aria-live="polite">
+            Informe o IP destino e clique em Traçar rota para descobrir os saltos reais.
+          </p>
+
+          <div class="network-map network-map--empty" id="network-map" aria-label="Mapa da rota do pacote" style="--hop-count: 1">
+            <div class="network-line" aria-hidden="true"></div>
+            <div class="packet" id="packet" aria-hidden="true"></div>
+            <p class="route-placeholder" id="route-placeholder">
+              A rota aparece aqui após o traceroute. Cada destino mostra saltos diferentes.
+            </p>
+          </div>
+
+          <div class="insights-grid">
+            <article class="mini-panel">
+              <h3>Log da jornada</h3>
+              <ol class="log-list" id="journey-log" aria-live="polite">
+                <li><time>00:00:00</time> Pacote aguardando montagem...</li>
+              </ol>
+            </article>
+
+            <article class="mini-panel nat-card">
+              <h3>NAT em ação</h3>
+              <p>
+                Seu IP privado não é roteável na internet. O NAT troca o endereço
+                de origem por um IP público para o pacote conseguir voltar.
+              </p>
+              <dl>
+                <div>
+                  <dt>Antes</dt>
+                  <dd id="nat-before">192.168.1.10:52344</dd>
+                </div>
+                <div>
+                  <dt>Depois</dt>
+                  <dd id="nat-after">189.XX.XX.25:62001</dd>
+                </div>
+              </dl>
+            </article>
+
+            <article class="mini-panel vendor-panel">
+              <h3>Equipamentos na rota (tracert real)</h3>
+              <p class="vendor-panel__note">
+                Saltos obtidos por traceroute na sua região. Operadores reais por IP/ASN — MAC só na rede local.
+              </p>
+              <ol class="vendor-list" id="vendor-list"></ol>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="mac-vendor.js"></script>
+    <script src="traceroute.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
