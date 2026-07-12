@@ -1,3 +1,13 @@
+# Projetos
+
+## MontaQuadro — Simulador de Quadros Elétricos
+
+Simule a montagem de quadros de distribuição com trilho DIN, disjuntores, IDR, DPS e fiação.
+
+Abra [`quadro-eletrico/index.html`](quadro-eletrico/index.html) no navegador. Detalhes em [`quadro-eletrico/README.md`](quadro-eletrico/README.md).
+
+---
+
 # Por Dentro de um Pacote de Rede
 
 Dashboard interativa para simular a jornada de um pacote pela rede.
