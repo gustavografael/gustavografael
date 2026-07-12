@@ -807,7 +807,6 @@ label {
     const top = [];
     const bottom = [];
     const phaseTypes = ["L1", "L2", "L3"];
-    const count = withNeutral ? poles : poles;
     const phases = withNeutral ? poles - 1 : poles;
     for (let i = 0; i < phases; i++) {
       const t = phaseTypes[i] || "L1";
