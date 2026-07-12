@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MontaQuadro — Simulador de Quadros Elétricos</title>
+  <meta name="description" content="Simule a montagem de quadros elétricos: posicione disjuntores, IDR, DPS e faça a fiação no trilho DIN." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div class="brand-text">
+          <h1>MontaQuadro</h1>
+          <p>Simulador de quadros elétricos</p>
+        </div>
+      </div>
+
+      <div class="toolbar" role="toolbar" aria-label="Ferramentas">
+        <button type="button" class="tool-btn" id="btn-undo" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H13"/></svg>
+        </button>
+        <button type="button" class="tool-btn" id="btn-redo" title="Refazer (Ctrl+Y)" aria-label="Refazer">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H11"/></svg>
+        </button>
+        <span class="tool-sep"></span>
+        <button type="button" class="tool-btn" id="btn-wire" title="Modo fiação (W)" aria-label="Modo fiação" data-active="false">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h6l4 8h6"/><circle cx="4" cy="8" r="1.5" fill="currentColor"/><circle cx="20" cy="16" r="1.5" fill="currentColor"/></svg>
+          <span>Fiação</span>
+        </button>
+        <button type="button" class="tool-btn" id="btn-select" title="Selecionar / mover (V)" aria-label="Selecionar" data-active="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l7 16 2-6 6-2L4 4z"/></svg>
+          <span>Mover</span>
+        </button>
+        <span class="tool-sep"></span>
+        <button type="button" class="tool-btn" id="btn-clear" title="Limpar quadro" aria-label="Limpar">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          <span>Limpar</span>
+        </button>
+        <button type="button" class="tool-btn primary" id="btn-export" title="Exportar JSON" aria-label="Exportar">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span>Exportar</span>
+        </button>
+        <label class="tool-btn" id="btn-import" title="Importar JSON">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>
+          <span>Importar</span>
+          <input type="file" id="import-file" accept="application/json,.json" hidden />
+        </label>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="palette" aria-label="Biblioteca de componentes">
+        <h2>Componentes</h2>
+        <p class="palette-hint">Arraste para o trilho DIN ou clique para adicionar.</p>
+
+        <div class="palette-group">
+          <h3>Disjuntores</h3>
+          <div class="palette-grid" id="palette-breakers"></div>
+        </div>
+        <div class="palette-group">
+          <h3>Proteção</h3>
+          <div class="palette-grid" id="palette-protection"></div>
+        </div>
+        <div class="palette-group">
+          <h3>Barramentos</h3>
+          <div class="palette-grid" id="palette-bus"></div>
+        </div>
+
+        <div class="wire-legend">
+          <h3>Cores dos cabos</h3>
+          <ul>
+            <li><span class="swatch phase-l1"></span> Fase L1</li>
+            <li><span class="swatch phase-l2"></span> Fase L2</li>
+            <li><span class="swatch phase-l3"></span> Fase L3</li>
+            <li><span class="swatch neutral"></span> Neutro</li>
+            <li><span class="swatch earth"></span> Terra (PE)</li>
+          </ul>
+        </div>
+      </aside>
+
+      <section class="canvas-wrap" aria-label="Área do quadro">
+        <div class="canvas-meta">
+          <span id="status-text">Modo mover — arraste componentes no trilho</span>
+          <span id="count-text">0 componentes · 0 cabos</span>
+        </div>
+        <div class="panel-frame" id="panel-frame">
+          <svg id="panel-svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Quadro elétrico">
+            <defs>
+              <pattern id="panel-texture" width="8" height="8" patternUnits="userSpaceOnUse">
+                <rect width="8" height="8" fill="#d8dde3"/>
+                <circle cx="1" cy="1" r="0.6" fill="#c9ced6" opacity="0.5"/>
+              </pattern>
+              <pattern id="earth-stripe" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="4" height="8" fill="#f5d76e"/>
+                <rect x="4" width="4" height="8" fill="#2f9e44"/>
+              </pattern>
+              <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.18"/>
+              </filter>
+            </defs>
+            <rect class="panel-body" x="0" y="0" width="100%" height="100%" fill="url(#panel-texture)"/>
+            <g id="rails-layer"></g>
+            <g id="wires-layer"></g>
+            <g id="components-layer"></g>
+            <g id="preview-wire"></g>
+            <g id="terminals-overlay"></g>
+          </svg>
+        </div>
+        <p class="canvas-tip">Dica: no modo <strong>Fiação</strong>, clique em um terminal e depois no outro. Delete remove o item selecionado.</p>
+      </section>
+
+      <aside class="inspector" aria-label="Propriedades">
+        <h2>Propriedades</h2>
+        <div id="inspector-empty" class="inspector-empty">
+          <p>Selecione um componente no quadro para editar corrente, pólos e etiqueta.</p>
+        </div>
+        <form id="inspector-form" class="inspector-form" hidden>
+          <label>
+            Etiqueta
+            <input type="text" id="prop-label" maxlength="24" />
+          </label>
+          <label>
+            Tipo
+            <input type="text" id="prop-type" readonly />
+          </label>
+          <label>
+            Corrente (A)
+            <select id="prop-amps"></select>
+          </label>
+          <label>
+            Curva
+            <select id="prop-curve">
+              <option value="B">B</option>
+              <option value="C" selected>C</option>
+              <option value="D">D</option>
+            </select>
+          </label>
+          <button type="button" class="danger-btn" id="btn-delete-comp">Remover componente</button>
+        </form>
+
+        <div class="howto">
+          <h3>Como usar</h3>
+          <ol>
+            <li>Escolha um componente na biblioteca</li>
+            <li>Posicione-o no trilho DIN</li>
+            <li>Ative <em>Fiação</em> e ligue os terminais</li>
+            <li>Exporte o projeto em JSON</li>
+          </ol>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" hidden role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
