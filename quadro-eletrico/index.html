@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MontaQuadro — Simulador de Quadros Elétricos</title>
-  <meta name="description" content="Simule a montagem de quadros elétricos: posicione disjuntores, IDR, DPS e faça a fiação no trilho DIN." />
+  <meta name="description" content="Simule a montagem de quadros elétricos com disjuntores Steck, DR, DPS e cabos de fase, neutro e terra." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
@@ -56,31 +56,44 @@
 
     <main class="workspace">
       <aside class="palette" aria-label="Biblioteca de componentes">
-        <h2>Componentes</h2>
-        <p class="palette-hint">Arraste para o trilho DIN ou clique para adicionar.</p>
+        <h2>Menu</h2>
+        <p class="palette-hint">Disjuntores Steck, DR, DPS e cabos. Arraste ou clique.</p>
 
-        <div class="palette-group">
-          <h3>Disjuntores</h3>
-          <div class="palette-grid" id="palette-breakers"></div>
-        </div>
-        <div class="palette-group">
-          <h3>Proteção</h3>
-          <div class="palette-grid" id="palette-protection"></div>
-        </div>
-        <div class="palette-group">
-          <h3>Barramentos</h3>
-          <div class="palette-grid" id="palette-bus"></div>
+        <div class="palette-tabs" role="tablist">
+          <button type="button" class="palette-tab" data-tab="breakers" data-active="true">Disjuntores</button>
+          <button type="button" class="palette-tab" data-tab="dr">DR</button>
+          <button type="button" class="palette-tab" data-tab="dps">DPS</button>
+          <button type="button" class="palette-tab" data-tab="cables">Cabos</button>
+          <button type="button" class="palette-tab" data-tab="bus">Barras</button>
         </div>
 
-        <div class="wire-legend">
-          <h3>Cores dos cabos</h3>
-          <ul>
-            <li><span class="swatch phase-l1"></span> Fase L1</li>
-            <li><span class="swatch phase-l2"></span> Fase L2</li>
-            <li><span class="swatch phase-l3"></span> Fase L3</li>
-            <li><span class="swatch neutral"></span> Neutro</li>
-            <li><span class="swatch earth"></span> Terra (PE)</li>
-          </ul>
+        <div class="palette-panels">
+          <div class="palette-panel" id="tab-breakers" data-active="true">
+            <h3>Disjuntores Steck</h3>
+            <div class="palette-grid" id="palette-breakers"></div>
+          </div>
+          <div class="palette-panel" id="tab-dr" hidden>
+            <h3>Interruptor DR</h3>
+            <div class="palette-grid" id="palette-dr"></div>
+          </div>
+          <div class="palette-panel" id="tab-dps" hidden>
+            <h3>DPS — Surto</h3>
+            <div class="palette-grid" id="palette-dps"></div>
+          </div>
+          <div class="palette-panel" id="tab-cables" hidden>
+            <h3>Cabos de ligação</h3>
+            <p class="palette-hint">Selecione um cabo e clique em dois terminais compatíveis.</p>
+            <div class="palette-grid cables" id="palette-cables"></div>
+          </div>
+          <div class="palette-panel" id="tab-bus" hidden>
+            <h3>Barramentos</h3>
+            <div class="palette-grid" id="palette-bus"></div>
+          </div>
+        </div>
+
+        <div class="active-cable" id="active-cable" hidden>
+          <span class="swatch" id="active-cable-swatch"></span>
+          <span id="active-cable-label">Cabo ativo</span>
         </div>
       </aside>
 
@@ -112,13 +125,13 @@
             <g id="terminals-overlay"></g>
           </svg>
         </div>
-        <p class="canvas-tip">Dica: no modo <strong>Fiação</strong>, clique em um terminal e depois no outro. Delete remove o item selecionado.</p>
+        <p class="canvas-tip">Dica: no menu <strong>Cabos</strong>, escolha L1, L2, Neutro ou Terra e ligue os terminais. Delete remove o item selecionado.</p>
       </section>
 
       <aside class="inspector" aria-label="Propriedades">
         <h2>Propriedades</h2>
         <div id="inspector-empty" class="inspector-empty">
-          <p>Selecione um componente no quadro para editar corrente, pólos e etiqueta.</p>
+          <p>Selecione um componente no quadro para editar corrente, curva e etiqueta.</p>
         </div>
         <form id="inspector-form" class="inspector-form" hidden>
           <label>
@@ -147,9 +160,9 @@
         <div class="howto">
           <h3>Como usar</h3>
           <ol>
-            <li>Escolha um componente na biblioteca</li>
-            <li>Posicione-o no trilho DIN</li>
-            <li>Ative <em>Fiação</em> e ligue os terminais</li>
+            <li>Escolha disjuntor, DR ou DPS no menu</li>
+            <li>Posicione no trilho DIN</li>
+            <li>Use Cabos (L1/L2/N/PE) para ligar</li>
             <li>Exporte o projeto em JSON</li>
           </ol>
         </div>

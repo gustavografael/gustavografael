@@ -6,6 +6,7 @@
   const PANEL_W = 920;
   const PANEL_H = 520;
   const AMPS = [6, 10, 16, 20, 25, 32, 40, 50, 63];
+  const ASSET = (name) => `assets/${name}`;
 
   const WIRE_COLORS = {
     L1: "#1a1a1a",
@@ -15,120 +16,277 @@
     PE: "#2f9e44",
   };
 
+  const WIRE_LABELS = {
+    L1: "Fase L1",
+    L2: "Fase L2",
+    L3: "Fase L3",
+    N: "Neutro",
+    PE: "Terra (PE)",
+  };
+
+  function polesTerminals(poles, withNeutral = false) {
+    const top = [];
+    const bottom = [];
+    const phaseTypes = ["L1", "L2", "L3"];
+    const phases = withNeutral ? poles - 1 : poles;
+    for (let i = 0; i < phases; i++) {
+      const t = phaseTypes[i] || "L1";
+      top.push({ id: `in-${t.toLowerCase()}`, side: "top", type: t, label: t });
+      bottom.push({ id: `out-${t.toLowerCase()}`, side: "bottom", type: t, label: t });
+    }
+    if (withNeutral) {
+      top.push({ id: "in-n", side: "top", type: "N", label: "N" });
+      bottom.push({ id: "out-n", side: "bottom", type: "N", label: "N" });
+    }
+    if (poles === 1 && !withNeutral) {
+      return [
+        { id: "in", side: "top", type: "L1", label: "In" },
+        { id: "out", side: "bottom", type: "L1", label: "Out" },
+      ];
+    }
+    if (poles === 2 && withNeutral) {
+      return [
+        { id: "in-l", side: "top", type: "L1", label: "L" },
+        { id: "in-n", side: "top", type: "N", label: "N" },
+        { id: "out-l", side: "bottom", type: "L1", label: "L" },
+        { id: "out-n", side: "bottom", type: "N", label: "N" },
+      ];
+    }
+    return [...top, ...bottom];
+  }
+
   const CATALOG = [
+    // Disjuntores Steck
     {
-      id: "mcb1",
+      id: "mcb-1p-10",
       group: "breakers",
-      name: "Disjuntor 1P",
-      short: "MCB 1P",
+      name: "Steck 1P 10A",
+      short: "SD 1P C10",
+      poles: 1,
+      modules: 1,
+      kind: "mcb",
+      defaultAmps: 10,
+      image: "mcb-1p-10a.png",
+      thumb: "mcb-1p-10a-thumb.png",
+      terminals: polesTerminals(1),
+    },
+    {
+      id: "mcb-1p-16",
+      group: "breakers",
+      name: "Steck 1P 16A",
+      short: "SD 1P C16",
       poles: 1,
       modules: 1,
       kind: "mcb",
       defaultAmps: 16,
-      terminals: [
-        { id: "in", side: "top", type: "L1", label: "In" },
-        { id: "out", side: "bottom", type: "L1", label: "Out" },
-      ],
+      image: "mcb-1p.png",
+      thumb: "mcb-1p-thumb.png",
+      terminals: polesTerminals(1),
     },
     {
-      id: "mcb2",
+      id: "mcb-1p-20",
       group: "breakers",
-      name: "Disjuntor 2P",
-      short: "MCB 2P",
+      name: "Steck 1P 20A",
+      short: "SD 1P C20",
+      poles: 1,
+      modules: 1,
+      kind: "mcb",
+      defaultAmps: 20,
+      image: "mcb-1p-20a.png",
+      thumb: "mcb-1p-20a-thumb.png",
+      terminals: polesTerminals(1),
+    },
+    {
+      id: "mcb-1p-32",
+      group: "breakers",
+      name: "Steck 1P 32A",
+      short: "SD 1P C32",
+      poles: 1,
+      modules: 1,
+      kind: "mcb",
+      defaultAmps: 32,
+      image: "mcb-1p-32a.png",
+      thumb: "mcb-1p-32a-thumb.png",
+      terminals: polesTerminals(1),
+    },
+    {
+      id: "mcb-1p-40",
+      group: "breakers",
+      name: "Steck 1P 40A",
+      short: "SD 1P C40",
+      poles: 1,
+      modules: 1,
+      kind: "mcb",
+      defaultAmps: 40,
+      image: "mcb-1p-40a.png",
+      thumb: "mcb-1p-40a-thumb.png",
+      terminals: polesTerminals(1),
+    },
+    {
+      id: "mcb-2p-25",
+      group: "breakers",
+      name: "Steck 2P 25A",
+      short: "SD 2P C25",
       poles: 2,
       modules: 2,
       kind: "mcb",
       defaultAmps: 25,
-      terminals: [
-        { id: "in-l", side: "top", type: "L1", label: "L" },
-        { id: "in-n", side: "top", type: "N", label: "N" },
-        { id: "out-l", side: "bottom", type: "L1", label: "L" },
-        { id: "out-n", side: "bottom", type: "N", label: "N" },
-      ],
+      image: "mcb-2p.png",
+      thumb: "mcb-2p-thumb.png",
+      terminals: polesTerminals(2, true),
     },
     {
-      id: "mcb3",
+      id: "mcb-2p-40",
       group: "breakers",
-      name: "Disjuntor 3P",
-      short: "MCB 3P",
+      name: "Steck 2P 40A",
+      short: "SD 2P C40",
+      poles: 2,
+      modules: 2,
+      kind: "mcb",
+      defaultAmps: 40,
+      image: "mcb-2p-40a.png",
+      thumb: "mcb-2p-40a-thumb.png",
+      terminals: polesTerminals(2, true),
+    },
+    {
+      id: "mcb-3p-32",
+      group: "breakers",
+      name: "Steck 3P 32A",
+      short: "SD 3P C32",
       poles: 3,
       modules: 3,
       kind: "mcb",
       defaultAmps: 32,
-      terminals: [
-        { id: "in-l1", side: "top", type: "L1", label: "L1" },
-        { id: "in-l2", side: "top", type: "L2", label: "L2" },
-        { id: "in-l3", side: "top", type: "L3", label: "L3" },
-        { id: "out-l1", side: "bottom", type: "L1", label: "L1" },
-        { id: "out-l2", side: "bottom", type: "L2", label: "L2" },
-        { id: "out-l3", side: "bottom", type: "L3", label: "L3" },
-      ],
+      image: "mcb-3p.png",
+      thumb: "mcb-3p-thumb.png",
+      terminals: polesTerminals(3),
     },
     {
-      id: "mcb4",
+      id: "mcb-3p-63",
       group: "breakers",
-      name: "Disjuntor 4P",
-      short: "MCB 4P",
+      name: "Steck 3P 63A",
+      short: "SD 3P C63",
+      poles: 3,
+      modules: 3,
+      kind: "mcb",
+      defaultAmps: 63,
+      image: "mcb-3p-63a.png",
+      thumb: "mcb-3p-63a-thumb.png",
+      terminals: polesTerminals(3),
+    },
+    {
+      id: "mcb-4p-40",
+      group: "breakers",
+      name: "Steck 4P 40A",
+      short: "SD 4P C40",
       poles: 4,
       modules: 4,
       kind: "mcb",
       defaultAmps: 40,
-      terminals: [
-        { id: "in-l1", side: "top", type: "L1", label: "L1" },
-        { id: "in-l2", side: "top", type: "L2", label: "L2" },
-        { id: "in-l3", side: "top", type: "L3", label: "L3" },
-        { id: "in-n", side: "top", type: "N", label: "N" },
-        { id: "out-l1", side: "bottom", type: "L1", label: "L1" },
-        { id: "out-l2", side: "bottom", type: "L2", label: "L2" },
-        { id: "out-l3", side: "bottom", type: "L3", label: "L3" },
-        { id: "out-n", side: "bottom", type: "N", label: "N" },
-      ],
+      image: "mcb-4p.png",
+      thumb: "mcb-4p-thumb.png",
+      terminals: polesTerminals(4, true),
     },
+
+    // DR
     {
-      id: "idr2",
-      group: "protection",
-      name: "IDR 2P",
-      short: "IDR 2P",
+      id: "dr-2p-25",
+      group: "dr",
+      name: "Steck DR 2P 25A",
+      short: "DR 2P 25A",
       poles: 2,
       modules: 2,
-      kind: "idr",
-      defaultAmps: 40,
-      terminals: [
-        { id: "in-l", side: "top", type: "L1", label: "L" },
-        { id: "in-n", side: "top", type: "N", label: "N" },
-        { id: "out-l", side: "bottom", type: "L1", label: "L" },
-        { id: "out-n", side: "bottom", type: "N", label: "N" },
-      ],
+      kind: "dr",
+      defaultAmps: 25,
+      image: "dr-2p-25a.png",
+      thumb: "dr-2p-25a-thumb.png",
+      terminals: polesTerminals(2, true),
     },
     {
-      id: "idr4",
-      group: "protection",
-      name: "IDR 4P",
-      short: "IDR 4P",
+      id: "dr-2p-40",
+      group: "dr",
+      name: "Steck DR 2P 40A",
+      short: "DR 2P 40A",
+      poles: 2,
+      modules: 2,
+      kind: "dr",
+      defaultAmps: 40,
+      image: "dr-2p.png",
+      thumb: "dr-2p-thumb.png",
+      terminals: polesTerminals(2, true),
+    },
+    {
+      id: "dr-4p-40",
+      group: "dr",
+      name: "Steck DR 4P 40A",
+      short: "DR 4P 40A",
       poles: 4,
       modules: 4,
-      kind: "idr",
+      kind: "dr",
       defaultAmps: 40,
+      image: "dr-4p.png",
+      thumb: "dr-4p-thumb.png",
+      terminals: polesTerminals(4, true),
+    },
+    {
+      id: "dr-4p-63",
+      group: "dr",
+      name: "Steck DR 4P 63A",
+      short: "DR 4P 63A",
+      poles: 4,
+      modules: 4,
+      kind: "dr",
+      defaultAmps: 63,
+      image: "dr-4p-63a.png",
+      thumb: "dr-4p-63a-thumb.png",
+      terminals: polesTerminals(4, true),
+    },
+
+    // DPS
+    {
+      id: "dps-1p",
+      group: "dps",
+      name: "Steck DPS 1P",
+      short: "DPS 1P",
+      poles: 1,
+      modules: 1,
+      kind: "dps",
+      defaultAmps: 20,
+      image: "dps-1p.png",
+      thumb: "dps-1p-thumb.png",
       terminals: [
-        { id: "in-l1", side: "top", type: "L1", label: "L1" },
-        { id: "in-l2", side: "top", type: "L2", label: "L2" },
-        { id: "in-l3", side: "top", type: "L3", label: "L3" },
-        { id: "in-n", side: "top", type: "N", label: "N" },
-        { id: "out-l1", side: "bottom", type: "L1", label: "L1" },
-        { id: "out-l2", side: "bottom", type: "L2", label: "L2" },
-        { id: "out-l3", side: "bottom", type: "L3", label: "L3" },
-        { id: "out-n", side: "bottom", type: "N", label: "N" },
+        { id: "l1", side: "top", type: "L1", label: "L" },
+        { id: "pe", side: "bottom", type: "PE", label: "PE" },
       ],
     },
     {
-      id: "dps",
-      group: "protection",
-      name: "DPS",
-      short: "DPS",
+      id: "dps-2p",
+      group: "dps",
+      name: "Steck DPS 2P",
+      short: "DPS 2P",
+      poles: 2,
+      modules: 2,
+      kind: "dps",
+      defaultAmps: 20,
+      image: "dps-2p.png",
+      thumb: "dps-2p-thumb.png",
+      terminals: [
+        { id: "l1", side: "top", type: "L1", label: "L" },
+        { id: "n", side: "top", type: "N", label: "N" },
+        { id: "pe", side: "bottom", type: "PE", label: "PE" },
+      ],
+    },
+    {
+      id: "dps-3p",
+      group: "dps",
+      name: "Steck DPS 3P",
+      short: "DPS 3P",
       poles: 3,
       modules: 3,
       kind: "dps",
       defaultAmps: 20,
+      image: "dps-3p.png",
+      thumb: "dps-3p-thumb.png",
       terminals: [
         { id: "l1", side: "top", type: "L1", label: "L1" },
         { id: "l2", side: "top", type: "L2", label: "L2" },
@@ -136,6 +294,8 @@
         { id: "pe", side: "bottom", type: "PE", label: "PE" },
       ],
     },
+
+    // Barramentos
     {
       id: "bus-n",
       group: "bus",
@@ -145,6 +305,8 @@
       modules: 8,
       kind: "bus-n",
       defaultAmps: 63,
+      image: "bus-n.png",
+      thumb: "bus-n-thumb.png",
       terminals: Array.from({ length: 8 }, (_, i) => ({
         id: `n${i + 1}`,
         side: "bottom",
@@ -161,6 +323,8 @@
       modules: 8,
       kind: "bus-pe",
       defaultAmps: 63,
+      image: "bus-pe.png",
+      thumb: "bus-pe-thumb.png",
       terminals: Array.from({ length: 8 }, (_, i) => ({
         id: `pe${i + 1}`,
         side: "bottom",
@@ -170,6 +334,14 @@
     },
   ];
 
+  const CABLES = [
+    { id: "cable-l1", type: "L1", name: "Cabo Fase L1", image: "cable-l1.png", color: WIRE_COLORS.L1 },
+    { id: "cable-l2", type: "L2", name: "Cabo Fase L2", image: "cable-l2.png", color: WIRE_COLORS.L2 },
+    { id: "cable-l3", type: "L3", name: "Cabo Fase L3", image: "cable-l3.png", color: WIRE_COLORS.L3 },
+    { id: "cable-n", type: "N", name: "Cabo Neutro", image: "cable-n.png", color: WIRE_COLORS.N },
+    { id: "cable-pe", type: "PE", name: "Cabo Terra", image: "cable-pe.png", color: WIRE_COLORS.PE },
+  ];
+
   const state = {
     mode: "select",
     components: [],
@@ -177,6 +349,7 @@
     selectedId: null,
     selectedWireId: null,
     pendingTerminal: null,
+    forcedWireType: null,
     drag: null,
     history: [],
     future: [],
@@ -194,6 +367,9 @@
   const inspectorEmpty = document.getElementById("inspector-empty");
   const inspectorForm = document.getElementById("inspector-form");
   const toastEl = document.getElementById("toast");
+  const activeCableEl = document.getElementById("active-cable");
+  const activeCableSwatch = document.getElementById("active-cable-swatch");
+  const activeCableLabel = document.getElementById("active-cable-label");
 
   function uid(prefix) {
     return `${prefix}-${state.nextId++}`;
@@ -247,22 +423,46 @@
     toastEl.hidden = false;
     toastEl.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      toastEl.classList.remove("show");
-    }, 1800);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
+  }
+
+  function updateCableUI() {
+    document.querySelectorAll(".cable-item").forEach((el) => {
+      el.dataset.active = String(el.dataset.wireType === state.forcedWireType);
+    });
+    if (state.forcedWireType) {
+      activeCableEl.hidden = false;
+      activeCableSwatch.style.background =
+        state.forcedWireType === "PE"
+          ? "repeating-linear-gradient(90deg,#f5d76e 0 4px,#2f9e44 4px 8px)"
+          : WIRE_COLORS[state.forcedWireType];
+      activeCableLabel.textContent = `Cabo ativo: ${WIRE_LABELS[state.forcedWireType]}`;
+    } else {
+      activeCableEl.hidden = true;
+    }
   }
 
   function setMode(mode) {
     state.mode = mode;
     state.pendingTerminal = null;
     previewWire.innerHTML = "";
+    if (mode !== "wire") state.forcedWireType = null;
     document.getElementById("btn-select").dataset.active = String(mode === "select");
     document.getElementById("btn-wire").dataset.active = String(mode === "wire");
     statusText.textContent =
       mode === "wire"
-        ? "Modo fiação — clique em dois terminais para ligar"
+        ? state.forcedWireType
+          ? `Cabo ${WIRE_LABELS[state.forcedWireType]} — clique em dois terminais`
+          : "Modo fiação — escolha um cabo no menu ou clique em terminais"
         : "Modo mover — arraste componentes no trilho";
+    updateCableUI();
     renderTerminals();
+  }
+
+  function selectCable(type) {
+    state.forcedWireType = type;
+    setMode("wire");
+    toast(`${WIRE_LABELS[type]} selecionado`);
   }
 
   function snapToRail(y) {
@@ -302,9 +502,7 @@
     for (const railY of [preferredRail, ...RAIL_Y.filter((y) => y !== preferredRail)]) {
       for (let x = 40; x <= PANEL_W - 40 - cat.modules * MODULE_WIDTH; x += MODULE_WIDTH) {
         const probe = { id: "__probe", typeId, x, railY };
-        if (!overlaps(probe, x, railY, null)) {
-          return { x, railY };
-        }
+        if (!overlaps(probe, x, railY, null)) return { x, railY };
       }
     }
     return { x: 40, railY: preferredRail };
@@ -315,10 +513,7 @@
     if (!cat) return null;
     if (!silent) pushHistory();
     const slot = at
-      ? {
-          x: snapX(at.x, cat.modules),
-          railY: snapToRail(at.y),
-        }
+      ? { x: snapX(at.x, cat.modules), railY: snapToRail(at.y) }
       : findFreeSlot(typeId);
     if (overlaps({ id: "__new", typeId }, slot.x, slot.railY, null)) {
       const free = findFreeSlot(typeId, slot.railY);
@@ -380,17 +575,14 @@
     const comp = state.components.find((c) => c.id === compId);
     if (!comp) return null;
     const cat = catalogById(comp.typeId);
-    const terms = cat.terminals.filter((t) => t.side === "top" || t.side === "bottom");
-    const top = cat.terminals.filter((t) => t.side === "top");
-    const bottom = cat.terminals.filter((t) => t.side === "bottom");
     const term = cat.terminals.find((t) => t.id === terminalId);
     if (!term) return null;
-    const list = term.side === "top" ? top : bottom;
+    const list = cat.terminals.filter((t) => t.side === term.side);
     const idx = list.findIndex((t) => t.id === terminalId);
     const width = cat.modules * MODULE_WIDTH;
     const spacing = width / (list.length + 1);
     const x = comp.x + spacing * (idx + 1);
-    const y = term.side === "top" ? comp.railY - 48 : comp.railY + 48;
+    const y = term.side === "top" ? comp.railY - 52 : comp.railY + 52;
     return { x, y, type: term.type, side: term.side };
   }
 
@@ -408,10 +600,18 @@
     const a = terminalWorldPos(from.compId, from.terminalId);
     const b = terminalWorldPos(to.compId, to.terminalId);
     if (!a || !b) return;
-    if (a.type !== b.type) {
+
+    if (state.forcedWireType) {
+      if (a.type !== state.forcedWireType || b.type !== state.forcedWireType) {
+        toast(`Use terminais ${state.forcedWireType} com este cabo`);
+        return;
+      }
+    } else if (a.type !== b.type) {
       toast(`Tipos incompatíveis: ${a.type} ≠ ${b.type}`);
       return;
     }
+
+    const wireType = state.forcedWireType || a.type;
     const exists = state.wires.some(
       (w) =>
         (w.from.compId === from.compId &&
@@ -430,14 +630,14 @@
     pushHistory();
     state.wires.push({
       id: uid("w"),
-      type: a.type,
+      type: wireType,
       from: { ...from },
       to: { ...to },
     });
     state.pendingTerminal = null;
     previewWire.innerHTML = "";
     render();
-    toast(`Cabo ${a.type} conectado`);
+    toast(`Cabo ${WIRE_LABELS[wireType]} conectado`);
   }
 
   function drawRails() {
@@ -477,7 +677,7 @@
   function componentVisual(comp) {
     const cat = catalogById(comp.typeId);
     const w = cat.modules * MODULE_WIDTH;
-    const h = 96;
+    const h = 104;
     const x = comp.x;
     const y = comp.railY - h / 2;
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -487,99 +687,32 @@
     g.setAttribute("transform", `translate(${x}, ${y})`);
     g.setAttribute("filter", "url(#soft-shadow)");
 
-    const body = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    body.classList.add("comp-body");
-    body.setAttribute("width", String(w));
-    body.setAttribute("height", String(h));
-    body.setAttribute("rx", "4");
-    body.setAttribute("fill", cat.kind.startsWith("bus") ? "#f4c430" : "#f7f8fa");
-    body.setAttribute("stroke", "#9aa3af");
-    body.setAttribute("stroke-width", "1.2");
-    g.appendChild(body);
+    const hit = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    hit.classList.add("comp-body");
+    hit.setAttribute("width", String(w));
+    hit.setAttribute("height", String(h));
+    hit.setAttribute("rx", "4");
+    hit.setAttribute("fill", "transparent");
+    hit.setAttribute("stroke", state.selectedId === comp.id ? "#e08a3c" : "transparent");
+    hit.setAttribute("stroke-width", "2.2");
 
-    if (cat.kind === "bus-pe") {
-      body.setAttribute("fill", "url(#earth-stripe)");
-    } else if (cat.kind === "bus-n") {
-      body.setAttribute("fill", "#42a5f5");
-      body.setAttribute("stroke", "#1e88e5");
-    }
-
-    if (!cat.kind.startsWith("bus")) {
-      for (let i = 0; i < cat.poles; i++) {
-        const pw = w / cat.poles;
-        if (i > 0) {
-          const divider = document.createElementNS("http://www.w3.org/2000/svg", "line");
-          divider.setAttribute("x1", String(pw * i));
-          divider.setAttribute("x2", String(pw * i));
-          divider.setAttribute("y1", "8");
-          divider.setAttribute("y2", String(h - 8));
-          divider.setAttribute("stroke", "#c5ccd6");
-          divider.setAttribute("stroke-width", "1");
-          g.appendChild(divider);
-        }
-
-        const lever = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        lever.setAttribute("x", String(pw * i + pw * 0.28));
-        lever.setAttribute("y", "28");
-        lever.setAttribute("width", String(pw * 0.44));
-        lever.setAttribute("height", "22");
-        lever.setAttribute("rx", "3");
-        lever.setAttribute("fill", cat.kind === "idr" ? "#c62828" : "#2b2f36");
-        g.appendChild(lever);
-
-        if (cat.kind === "dps") {
-          lever.setAttribute("fill", "#fb8c00");
-        }
-      }
-
-      const brand = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      brand.setAttribute("x", String(w / 2));
-      brand.setAttribute("y", "18");
-      brand.setAttribute("text-anchor", "middle");
-      brand.setAttribute("fill", "#5a6472");
-      brand.setAttribute("font-size", "8");
-      brand.setAttribute("font-family", "Outfit, sans-serif");
-      brand.textContent = cat.kind === "idr" ? "IDR" : cat.kind === "dps" ? "DPS" : "MCB";
-      g.appendChild(brand);
-
-      const rating = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      rating.setAttribute("x", String(w / 2));
-      rating.setAttribute("y", String(h - 14));
-      rating.setAttribute("text-anchor", "middle");
-      rating.setAttribute("fill", "#1a2330");
-      rating.setAttribute("font-size", "10");
-      rating.setAttribute("font-weight", "700");
-      rating.setAttribute("font-family", "Outfit, sans-serif");
-      rating.textContent =
-        cat.kind === "idr"
-          ? `${comp.curve}${comp.amps}A 30mA`
-          : cat.kind === "dps"
-            ? "Classe II"
-            : `${comp.curve}${comp.amps}A`;
-      g.appendChild(rating);
-    } else {
-      const busLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      busLabel.setAttribute("x", String(w / 2));
-      busLabel.setAttribute("y", String(h / 2 + 4));
-      busLabel.setAttribute("text-anchor", "middle");
-      busLabel.setAttribute("fill", cat.kind === "bus-n" ? "#fff" : "#1a2330");
-      busLabel.setAttribute("font-size", "12");
-      busLabel.setAttribute("font-weight", "700");
-      busLabel.setAttribute("font-family", "Outfit, sans-serif");
-      busLabel.textContent = cat.kind === "bus-n" ? "NEUTRO" : "TERRA";
-      g.appendChild(busLabel);
-    }
+    const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+    image.setAttribute("href", ASSET(cat.image));
+    image.setAttributeNS("http://www.w3.org/1999/xlink", "href", ASSET(cat.image));
+    image.setAttribute("width", String(w));
+    image.setAttribute("height", String(h));
+    image.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
     const tag = document.createElementNS("http://www.w3.org/2000/svg", "text");
     tag.setAttribute("x", String(w / 2));
-    tag.setAttribute("y", String(h + 14));
+    tag.setAttribute("y", String(h + 13));
     tag.setAttribute("text-anchor", "middle");
     tag.setAttribute("fill", "#3d4654");
     tag.setAttribute("font-size", "10");
     tag.setAttribute("font-family", "Outfit, sans-serif");
     tag.textContent = comp.label;
-    g.appendChild(tag);
 
+    g.append(image, hit, tag);
     g.addEventListener("pointerdown", onComponentPointerDown);
     return g;
   }
@@ -593,10 +726,8 @@
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", wirePath(a, b));
       path.setAttribute("stroke", WIRE_COLORS[wire.type] || "#333");
-      path.setAttribute("stroke-width", wire.type === "PE" ? "4" : "3");
-      if (wire.type === "PE") {
-        path.setAttribute("stroke-dasharray", "8 4");
-      }
+      path.setAttribute("stroke-width", wire.type === "PE" ? "4" : "3.2");
+      if (wire.type === "PE") path.setAttribute("stroke-dasharray", "8 4");
       path.classList.add("wire-path");
       if (state.selectedWireId === wire.id) path.classList.add("selected");
       path.dataset.wireId = wire.id;
@@ -618,15 +749,16 @@
     for (const comp of state.components) {
       const cat = catalogById(comp.typeId);
       for (const term of cat.terminals) {
+        if (state.forcedWireType && term.type !== state.forcedWireType) continue;
         const pos = terminalWorldPos(comp.id, term.id);
         if (!pos) continue;
         const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         circle.setAttribute("cx", String(pos.x));
         circle.setAttribute("cy", String(pos.y));
-        circle.setAttribute("r", "4");
+        circle.setAttribute("r", "4.5");
         circle.setAttribute(
           "fill",
-          term.type === "PE" ? "#2f9e44" : term.type === "N" ? "#1e88e5" : "#222"
+          term.type === "PE" ? "#2f9e44" : term.type === "N" ? "#1e88e5" : term.type === "L2" ? "#c62828" : term.type === "L3" ? "#8d6e63" : "#222"
         );
         circle.setAttribute("stroke", "#fff");
         circle.setAttribute("stroke-width", "1.5");
@@ -637,11 +769,9 @@
           state.pendingTerminal.terminalId === term.id
         ) {
           circle.classList.add("hot");
-          circle.setAttribute("r", "6");
+          circle.setAttribute("r", "6.5");
           circle.setAttribute("stroke", "#e08a3c");
         }
-        circle.dataset.compId = comp.id;
-        circle.dataset.terminalId = term.id;
         circle.addEventListener("pointerdown", (e) => {
           e.stopPropagation();
           e.preventDefault();
@@ -734,13 +864,9 @@
       let x = snapX(p.x - state.drag.offsetX, cat.modules);
       let railY = snapToRail(p.y - state.drag.offsetY);
       if (overlaps(comp, x, railY, comp.id)) {
-        // keep previous if overlap at new slot; still allow vertical rail change when free
-        if (!overlaps(comp, comp.x, railY, comp.id)) {
-          railY = railY;
-          x = comp.x;
-        } else if (!overlaps(comp, x, comp.railY, comp.id)) {
-          railY = comp.railY;
-        } else {
+        if (!overlaps(comp, comp.x, railY, comp.id)) x = comp.x;
+        else if (!overlaps(comp, x, comp.railY, comp.id)) railY = comp.railY;
+        else {
           x = comp.x;
           railY = comp.railY;
         }
@@ -758,14 +884,15 @@
       const a = terminalWorldPos(state.pendingTerminal.compId, state.pendingTerminal.terminalId);
       if (!a) return;
       const p = svgPoint(evt);
+      const color = WIRE_COLORS[state.forcedWireType || a.type] || "#333";
       previewWire.innerHTML = "";
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", wirePath(a, p));
-      path.setAttribute("stroke", WIRE_COLORS[a.type] || "#333");
+      path.setAttribute("stroke", color);
       path.setAttribute("stroke-width", "2.5");
       path.setAttribute("stroke-dasharray", "6 4");
       path.setAttribute("fill", "none");
-      path.setAttribute("opacity", "0.7");
+      path.setAttribute("opacity", "0.75");
       previewWire.appendChild(path);
     }
   }
@@ -777,7 +904,6 @@
     if (drag.moved) {
       const comp = state.components.find((c) => c.id === drag.id);
       if (comp && (comp.x !== drag.origin.x || comp.railY !== drag.origin.railY)) {
-        // history was not pushed during drag — push with previous restored then current
         const current = { x: comp.x, railY: comp.railY };
         comp.x = drag.origin.x;
         comp.railY = drag.origin.railY;
@@ -802,9 +928,11 @@
   function buildPalette() {
     const groups = {
       breakers: document.getElementById("palette-breakers"),
-      protection: document.getElementById("palette-protection"),
+      dr: document.getElementById("palette-dr"),
+      dps: document.getElementById("palette-dps"),
       bus: document.getElementById("palette-bus"),
     };
+
     for (const item of CATALOG) {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -812,10 +940,10 @@
       btn.draggable = true;
       btn.dataset.typeId = item.id;
       btn.innerHTML = `
-        <span class="thumb">${paletteThumb(item)}</span>
+        <span class="thumb photo"><img src="${ASSET(item.thumb || item.image)}" alt=""></span>
         <span>
           <strong>${item.name}</strong>
-          <small>${item.modules} módulo${item.modules > 1 ? "s" : ""} · ${item.poles}P</small>
+          <small>${item.modules} mód. · ${item.poles}P · ${item.defaultAmps}A</small>
         </span>
       `;
       btn.addEventListener("click", () => addComponent(item.id));
@@ -825,27 +953,44 @@
       });
       groups[item.group].appendChild(btn);
     }
+
+    const cableGrid = document.getElementById("palette-cables");
+    for (const cable of CABLES) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "palette-item cable-item";
+      btn.dataset.wireType = cable.type;
+      btn.innerHTML = `
+        <span class="thumb photo"><img src="${ASSET(cable.image)}" alt=""></span>
+        <span>
+          <strong>${cable.name}</strong>
+          <small>Ligar terminais ${cable.type}</small>
+        </span>
+      `;
+      btn.addEventListener("click", () => selectCable(cable.type));
+      cableGrid.appendChild(btn);
+    }
   }
 
-  function paletteThumb(item) {
-    const w = Math.max(28, item.modules * 8);
-    if (item.kind === "bus-n") {
-      return `<svg viewBox="0 0 44 36"><rect x="2" y="10" width="40" height="16" rx="3" fill="#42a5f5"/></svg>`;
-    }
-    if (item.kind === "bus-pe") {
-      return `<svg viewBox="0 0 44 36"><rect x="2" y="10" width="40" height="16" rx="3" fill="#f5d76e"/><rect x="2" y="10" width="20" height="16" fill="#2f9e44"/></svg>`;
-    }
-    const fill = item.kind === "idr" ? "#c62828" : item.kind === "dps" ? "#fb8c00" : "#2b2f36";
-    let levers = "";
-    for (let i = 0; i < Math.min(item.poles, 4); i++) {
-      levers += `<rect x="${6 + i * 9}" y="12" width="6" height="10" rx="1" fill="${fill}"/>`;
-    }
-    return `<svg viewBox="0 0 44 36"><rect x="2" y="4" width="40" height="28" rx="3" fill="#eef1f5" stroke="#b0b8c4"/>${levers}</svg>`;
+  function setupTabs() {
+    document.querySelectorAll(".palette-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const id = tab.dataset.tab;
+        document.querySelectorAll(".palette-tab").forEach((t) => {
+          t.dataset.active = String(t === tab);
+        });
+        document.querySelectorAll(".palette-panel").forEach((panel) => {
+          const on = panel.id === `tab-${id}`;
+          panel.hidden = !on;
+          panel.dataset.active = String(on);
+        });
+      });
+    });
   }
 
   function exportProject() {
     const payload = {
-      version: 1,
+      version: 2,
       name: "MontaQuadro",
       createdAt: new Date().toISOString(),
       components: state.components,
@@ -886,42 +1031,41 @@
   }
 
   function seedDemo() {
-    const general = addComponent("mcb3", null, { silent: true });
-    const idr = addComponent("idr2", null, { silent: true });
-    const c1 = addComponent("mcb1", null, { silent: true });
-    const c2 = addComponent("mcb1", null, { silent: true });
-    addComponent("dps", null, { silent: true });
+    const general = addComponent("mcb-3p-32", null, { silent: true });
+    const dr = addComponent("dr-2p-40", null, { silent: true });
+    const c1 = addComponent("mcb-1p-16", null, { silent: true });
+    const c2 = addComponent("mcb-1p-10", null, { silent: true });
+    const dps = addComponent("dps-3p", null, { silent: true });
     const busN = addComponent("bus-n", { x: 40, y: RAIL_Y[2] }, { silent: true });
     const busPE = addComponent("bus-pe", { x: 220, y: RAIL_Y[2] }, { silent: true });
 
-    if (general && idr) {
+    if (general && dr && c1 && c2 && busN) {
       state.wires.push(
         {
           id: uid("w"),
           type: "L1",
           from: { compId: general.id, terminalId: "out-l1" },
-          to: { compId: idr.id, terminalId: "in-l" },
+          to: { compId: dr.id, terminalId: "in-l" },
         },
         {
           id: uid("w"),
           type: "L1",
-          from: { compId: idr.id, terminalId: "out-l" },
+          from: { compId: dr.id, terminalId: "out-l" },
           to: { compId: c1.id, terminalId: "in" },
         },
         {
           id: uid("w"),
           type: "L1",
-          from: { compId: idr.id, terminalId: "out-l" },
+          from: { compId: dr.id, terminalId: "out-l" },
           to: { compId: c2.id, terminalId: "in" },
         },
         {
           id: uid("w"),
           type: "N",
-          from: { compId: idr.id, terminalId: "out-n" },
+          from: { compId: dr.id, terminalId: "out-n" },
           to: { compId: busN.id, terminalId: "n1" },
         }
       );
-      const dps = state.components.find((c) => c.typeId === "dps");
       if (dps && busPE) {
         state.wires.push({
           id: uid("w"),
@@ -937,7 +1081,6 @@
     state.future = [];
   }
 
-  // Events
   document.getElementById("btn-undo").addEventListener("click", undo);
   document.getElementById("btn-redo").addEventListener("click", redo);
   document.getElementById("btn-wire").addEventListener("click", () => setMode("wire"));
@@ -995,8 +1138,7 @@
     e.preventDefault();
     const typeId = e.dataTransfer.getData("text/typeId");
     if (!typeId) return;
-    const p = svgPoint(e);
-    addComponent(typeId, p);
+    addComponent(typeId, svgPoint(e));
   });
 
   window.addEventListener("keydown", (e) => {
@@ -1012,11 +1154,9 @@
     } else if (e.key === "Delete" || e.key === "Backspace") {
       e.preventDefault();
       deleteSelected();
-    } else if (e.key.toLowerCase() === "w") {
-      setMode("wire");
-    } else if (e.key.toLowerCase() === "v") {
-      setMode("select");
-    } else if (e.key === "Escape") {
+    } else if (e.key.toLowerCase() === "w") setMode("wire");
+    else if (e.key.toLowerCase() === "v") setMode("select");
+    else if (e.key === "Escape") {
       state.pendingTerminal = null;
       previewWire.innerHTML = "";
       setMode("select");
@@ -1024,6 +1164,7 @@
   });
 
   buildPalette();
+  setupTabs();
   seedDemo();
   setMode("select");
   render();
